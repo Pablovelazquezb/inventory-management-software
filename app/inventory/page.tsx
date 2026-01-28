@@ -8,7 +8,12 @@ export default async function InventoryPage() {
 
     const { data: items, error } = await supabase
         .from('inventory_items')
-        .select('*')
+        .select(`
+            *,
+            subcategories (
+                name
+            )
+        `)
         .order('created_at', { ascending: false })
 
     if (error) {
@@ -42,14 +47,22 @@ export default async function InventoryPage() {
                                 <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
                                     <td style={{ padding: '1rem', fontWeight: 500 }}>{item.name}</td>
                                     <td style={{ padding: '1rem', color: 'rgba(255,255,255,0.7)' }}>
-                                        <span style={{
-                                            background: 'rgba(255,255,255,0.1)',
-                                            padding: '0.25rem 0.6rem',
-                                            borderRadius: '4px',
-                                            fontSize: '0.75rem'
-                                        }}>
-                                            {item.category || 'Uncategorized'}
-                                        </span>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                            <span style={{
+                                                background: 'rgba(255,255,255,0.1)',
+                                                padding: '0.25rem 0.6rem',
+                                                borderRadius: '4px',
+                                                fontSize: '0.75rem',
+                                                width: 'fit-content'
+                                            }}>
+                                                {item.category || 'Uncategorized'}
+                                            </span>
+                                            {item.subcategories && (
+                                                <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', paddingLeft: '4px' }}>
+                                                    ↳ {item.subcategories.name}
+                                                </span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td style={{ padding: '1rem' }}>
                                         <span style={{
@@ -80,7 +93,7 @@ export default async function InventoryPage() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={5} style={{ padding: '4rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
+                                <td colSpan={6} style={{ padding: '4rem', textAlign: 'center', color: 'rgba(255,255,255,0.5)' }}>
                                     No items found. Start by adding one.
                                 </td>
                             </tr>

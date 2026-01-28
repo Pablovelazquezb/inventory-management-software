@@ -15,6 +15,7 @@ export async function createItem(prevState: any, formData: FormData) {
 
     const name = formData.get('name') as string
     const category = formData.get('category') as string
+    const subcategoryId = formData.get('subcategory_id') as string || null
     const quantity = parseInt(formData.get('quantity') as string)
     const price = parseFloat(formData.get('price') as string)
     const weight = formData.get('weight') ? parseFloat(formData.get('weight') as string) : null
@@ -22,7 +23,12 @@ export async function createItem(prevState: any, formData: FormData) {
 
     const { error } = await supabase.from('inventory_items').insert({
         name,
-        category,
+        category, // keeping this for backward compat or we can switch to category_id if we want strict FKs later, but user RLS fix kept it as string name. 
+        // Wait, the previous RLS fix kept 'category' as a string in the insert, but we have a 'categories' table now. 
+        // The current schema uses 'category' column in 'inventory_items' (text) and a separate 'categories' table. 
+        // Ideally we should link them, but let's stick to the current pattern unless specified.
+        // The implementation plan added 'subcategory_id'. 
+        subcategory_id: subcategoryId,
         quantity,
         price,
         weight,
@@ -48,6 +54,52 @@ export async function deleteItem(id: string) {
     }
 
     revalidatePath('/inventory')
+}
+
+export async function createSubcategory(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'You must be logged in to create subcategories' }
+    }
+
+    const name = formData.get('name') as string
+    const categoryId = formData.get('category_id') as string
+
+    if (!name || name.trim() === '') {
+        return { error: 'Subcategory name is required' }
+    }
+    if (!categoryId) {
+        return { error: 'Category ID is required' }
+    }
+
+    const { error } = await supabase.from('subcategories').insert({
+        name,
+        category_id: categoryId,
+        user_id: user.id
+    })
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/inventory/categories')
+    revalidatePath('/inventory/add')
+}
+
+export async function deleteSubcategory(id: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase.from('subcategories').delete().eq('id', id)
+
+    if (error) {
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/inventory/categories')
+    revalidatePath('/inventory/add')
 }
 
 export async function createCategory(prevState: any, formData: FormData) {
