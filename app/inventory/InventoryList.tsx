@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { deleteItem } from './actions'
+import { deleteItem, splitItem } from './actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 
@@ -30,6 +30,7 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
     const [expandedGroups, setExpandedGroups] = useState<{ [key: string]: boolean }>({})
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editWeight, setEditWeight] = useState<string>('')
+    const [splittingId, setSplittingId] = useState<string | null>(null)
 
     const toggleGroup = (key: string) => {
         setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }))
@@ -55,6 +56,23 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
         } else {
             alert('Error updating weight: ' + error.message)
         }
+    }
+
+    const handleSplit = async (id: string) => {
+        if (!confirm('This will separate 1 unit from this batch so you can edit it individually. Continue?')) return
+
+        setSplittingId(id)
+        await splitItem(id)
+
+        // Since splitItem calls revalidatePath, the page should refresh. 
+        // But in a client component with local state, we might need to wait or just rely on the server refresh.
+        // Actually, revalidatePath on server actions in Next.js App Router updates the client cache automatically.
+        // However, since we initialized state with `initialItems`, it might not update unless the parent re-renders.
+        // The parent is a Server Component, so revalidatePath will cause it to re-render and pass new `initialItems`.
+        // But React might preserve the state of this component unless `key` changes or we sync.
+        // A simple way to force sync:
+        window.location.reload()
+        // Or cleaner: use router.refresh() from next/navigation
     }
 
     return (
@@ -155,7 +173,22 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
                                                                             </div>
                                                                         )}
                                                                     </td>
-                                                                    <td style={{ padding: '0.5rem 0', textAlign: 'right' }}>
+                                                                    <td style={{ padding: '0.5rem 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
+                                                                        {item.quantity > 1 && (
+                                                                            <button
+                                                                                onClick={(e) => { e.stopPropagation(); handleSplit(item.id); }}
+                                                                                disabled={splittingId === item.id}
+                                                                                className="btn"
+                                                                                style={{
+                                                                                    padding: '0.2rem 0.5rem',
+                                                                                    fontSize: '0.75rem',
+                                                                                    background: 'rgba(255, 255, 255, 0.1)',
+                                                                                    border: 'none'
+                                                                                }}
+                                                                            >
+                                                                                {splittingId === item.id ? 'Splitting...' : 'Separate 1 Unit'}
+                                                                            </button>
+                                                                        )}
                                                                         <form action={deleteItem.bind(null, item.id)}>
                                                                             <button className="btn" style={{
                                                                                 padding: '0.2rem 0.6rem',

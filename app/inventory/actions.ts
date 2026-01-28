@@ -139,6 +139,60 @@ export async function deleteCategory(id: string) {
         throw new Error(error.message)
     }
 
+
     revalidatePath('/inventory/categories')
     revalidatePath('/inventory/add')
+}
+
+export async function splitItem(id: string) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'You must be logged in to split items' }
+    }
+
+    const { data: item, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+    if (fetchError || !item) {
+        return { error: 'Item not found' }
+    }
+
+    if (item.quantity <= 1) {
+        return { error: 'Cannot split an item with quantity 1' }
+    }
+
+    const { error: updateError } = await supabase
+        .from('inventory_items')
+        .update({ quantity: item.quantity - 1 })
+        .eq('id', id)
+
+    if (updateError) {
+        return { error: 'Failed to update original item' }
+    }
+
+    const { error: insertError } = await supabase
+        .from('inventory_items')
+        .insert({
+            name: item.name,
+            category: item.category,
+            subcategory_id: item.subcategory_id,
+            description: item.description,
+            price: item.price,
+            weight: item.weight,
+            quantity: 1,
+            user_id: user.id
+        })
+
+    if (insertError) {
+        console.error('Failed to create split item', insertError)
+        return { error: 'Failed to create new unit' }
+    }
+
+    revalidatePath('/inventory')
 }
