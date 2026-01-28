@@ -31,6 +31,7 @@ export default async function InventoryPage() {
                             <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Name</th>
                             <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Category</th>
                             <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Stock</th>
+                            <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Weight</th>
                             <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>Price</th>
                             <th style={{ padding: '1rem', fontWeight: 600, fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)', textAlign: 'right' }}>Actions</th>
                         </tr>
@@ -57,6 +58,9 @@ export default async function InventoryPage() {
                                         }}>
                                             {item.quantity} units
                                         </span>
+                                    </td>
+                                    <td style={{ padding: '1rem', color: 'rgba(255,255,255,0.7)' }}>
+                                        {item.weight ? `${item.weight} kg` : '-'}
                                     </td>
                                     <td style={{ padding: '1rem' }}>${item.price}</td>
                                     <td style={{ padding: '1rem', textAlign: 'right' }}>

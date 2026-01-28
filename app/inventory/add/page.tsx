@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { createItem } from '../actions'
 import Link from 'next/link'
+import { createClient } from '@/utils/supabase/client'
 
 const initialState = {
     error: '',
@@ -10,6 +11,20 @@ const initialState = {
 
 export default function AddItemPage() {
     const [state, formAction, isPending] = useActionState(createItem, initialState)
+    const [categories, setCategories] = useState<any[]>([])
+    const [loadingCategories, setLoadingCategories] = useState(true)
+
+    useEffect(() => {
+        async function fetchCategories() {
+            const supabase = createClient()
+            const { data } = await supabase.from('categories').select('*').order('name', { ascending: true })
+            if (data) {
+                setCategories(data)
+            }
+            setLoadingCategories(false)
+        }
+        fetchCategories()
+    }, [])
 
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
@@ -17,7 +32,9 @@ export default function AddItemPage() {
                 <Link href="/inventory" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                     ← Back to Inventory
                 </Link>
-                <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Add New Item</h2>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Add New Item</h2>
+                </div>
             </div>
 
             <div className="card">
@@ -31,15 +48,22 @@ export default function AddItemPage() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                                Category
-                            </label>
-                            <select className="input" name="category">
-                                <option value="Electronics">Electronics</option>
-                                <option value="Clothing">Clothing</option>
-                                <option value="Home & Garden">Home & Garden</option>
-                                <option value="Automotive">Automotive</option>
-                                <option value="Other">Other</option>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
+                                <label className="text-md" style={{ display: 'block', fontSize: '0.875rem', opacity: 0.8 }}>
+                                    Category
+                                </label>
+                                <Link href="/inventory/categories" style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
+                                    Manage
+                                </Link>
+                            </div>
+                            <select className="input" name="category" required>
+                                <option value="" disabled selected>Select a category</option>
+                                {categories.map((cat) => (
+                                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                                ))}
+                                {!loadingCategories && categories.length === 0 && (
+                                    <option value="Uncategorized">Uncategorized</option>
+                                )}
                             </select>
                         </div>
                         <div>
@@ -50,11 +74,19 @@ export default function AddItemPage() {
                         </div>
                     </div>
 
-                    <div>
-                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                            Quantity
-                        </label>
-                        <input className="input" name="quantity" type="number" placeholder="0" required />
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        <div>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
+                                Quantity
+                            </label>
+                            <input className="input" name="quantity" type="number" placeholder="0" required />
+                        </div>
+                        <div>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
+                                Weight (kg)
+                            </label>
+                            <input className="input" name="weight" type="number" step="0.01" placeholder="0.00" />
+                        </div>
                     </div>
 
                     <div>
