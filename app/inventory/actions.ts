@@ -7,6 +7,12 @@ import { redirect } from 'next/navigation'
 export async function createItem(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'You must be logged in to create items' }
+    }
+
     const name = formData.get('name') as string
     const category = formData.get('category') as string
     const quantity = parseInt(formData.get('quantity') as string)
@@ -21,6 +27,7 @@ export async function createItem(prevState: any, formData: FormData) {
         price,
         weight,
         description,
+        user_id: user.id
     })
 
     if (error) {
@@ -46,6 +53,12 @@ export async function deleteItem(id: string) {
 export async function createCategory(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'You must be logged in to create categories' }
+    }
+
     const name = formData.get('name') as string
 
     if (!name || name.trim() === '') {
@@ -54,6 +67,7 @@ export async function createCategory(prevState: any, formData: FormData) {
 
     const { error } = await supabase.from('categories').insert({
         name,
+        user_id: user.id
     })
 
     if (error) {
