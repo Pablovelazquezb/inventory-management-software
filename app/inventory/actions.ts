@@ -21,26 +21,30 @@ export async function createItem(prevState: any, formData: FormData) {
     const weight = formData.get('weight') ? parseFloat(formData.get('weight') as string) : null
     const description = formData.get('description') as string
 
-    const { error } = await supabase.from('inventory_items').insert({
+    const { data: item, error: itemError } = await supabase.from('inventory_items').insert({
         name,
-        category, // keeping this for backward compat or we can switch to category_id if we want strict FKs later, but user RLS fix kept it as string name. 
-        // Wait, the previous RLS fix kept 'category' as a string in the insert, but we have a 'categories' table now. 
-        // The current schema uses 'category' column in 'inventory_items' (text) and a separate 'categories' table. 
-        // Ideally we should link them, but let's stick to the current pattern unless specified.
-        // The implementation plan added 'subcategory_id'. 
+        category, // keeping this for backward compat
         subcategory_id: subcategoryId,
         quantity,
         price,
         weight,
         description,
         user_id: user.id
-    })
+    }).select().single()
 
-    if (error) {
-        return { error: error.message }
+    if (itemError) {
+        return { error: itemError.message }
     }
 
+    // Record initial stock entry
+    await supabase.from('stock_entries').insert({
+        item_id: item.id,
+        quantity_added: quantity,
+        user_id: user.id
+    })
+
     revalidatePath('/inventory')
+    revalidatePath('/dashboard')
     redirect('/inventory')
 }
 
@@ -54,6 +58,81 @@ export async function deleteItem(id: string) {
     }
 
     revalidatePath('/inventory')
+    revalidatePath('/dashboard')
+}
+
+export async function sellItem(id: string, quantitySold: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    // Get item
+    const { data: item, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+    if (fetchError || !item) return { error: 'Item not found' }
+    if (item.quantity < quantitySold) return { error: 'Insufficient stock' }
+
+    // Decrement stock
+    const { error: updateError } = await supabase
+        .from('inventory_items')
+        .update({ quantity: item.quantity - quantitySold })
+        .eq('id', id)
+
+    if (updateError) return { error: 'Failed to update stock' }
+
+    // Record sale
+    const { error: saleError } = await supabase.from('sales').insert({
+        item_id: id,
+        item_name: item.name,
+        quantity: quantitySold,
+        price_per_unit: item.price,
+        total_price: item.price * quantitySold,
+        user_id: user.id
+    })
+
+    if (saleError) console.error('Error recording sale:', saleError)
+
+    revalidatePath('/inventory')
+    revalidatePath('/dashboard')
+}
+
+export async function restockItem(id: string, quantityAdded: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    // Get item
+    const { data: item, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('quantity')
+        .eq('id', id)
+        .single()
+
+    if (fetchError || !item) return { error: 'Item not found' }
+
+    // Increment stock
+    const { error: updateError } = await supabase
+        .from('inventory_items')
+        .update({ quantity: item.quantity + quantityAdded })
+        .eq('id', id)
+
+    if (updateError) return { error: 'Failed to update stock' }
+
+    // Record entry
+    await supabase.from('stock_entries').insert({
+        item_id: id,
+        quantity_added: quantityAdded,
+        user_id: user.id
+    })
+
+    revalidatePath('/inventory')
+    revalidatePath('/dashboard')
 }
 
 export async function createSubcategory(prevState: any, formData: FormData) {
