@@ -65,7 +65,7 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
         await splitItem(id)
 
         // Since splitItem calls revalidatePath, the page should refresh. 
-        // But in a client component with local state, we might need to wait or just rely on the server refresh.
+        // But in a client component with local state, we might not need to wait or just rely on the server refresh.
         // Actually, revalidatePath on server actions in Next.js App Router updates the client cache automatically.
         // However, since we initialized state with `initialItems`, it might not update unless the parent re-renders.
         // The parent is a Server Component, so revalidatePath will cause it to re-render and pass new `initialItems`.
@@ -183,12 +183,23 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
                                                                                     padding: '0.2rem 0.5rem',
                                                                                     fontSize: '0.75rem',
                                                                                     background: 'rgba(255, 255, 255, 0.1)',
-                                                                                    border: 'none'
+                                                                                    border: 'none',
+                                                                                    whiteSpace: 'nowrap'
                                                                                 }}
                                                                             >
                                                                                 {splittingId === item.id ? 'Splitting...' : 'Separate 1 Unit'}
                                                                             </button>
                                                                         )}
+                                                                        <Link href={`/inventory/edit/${item.id}`} className="btn" style={{
+                                                                            padding: '0.2rem 0.6rem',
+                                                                            fontSize: '0.75rem',
+                                                                            background: 'rgba(255,255,255,0.1)',
+                                                                            border: 'none',
+                                                                            textDecoration: 'none',
+                                                                            color: 'var(--foreground)'
+                                                                        }}>
+                                                                            Edit
+                                                                        </Link>
                                                                         <form action={deleteItem.bind(null, item.id)}>
                                                                             <button className="btn" style={{
                                                                                 padding: '0.2rem 0.6rem',

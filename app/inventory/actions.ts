@@ -196,3 +196,55 @@ export async function splitItem(id: string) {
 
     revalidatePath('/inventory')
 }
+
+export async function updateItem(id: string, prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+        return { error: 'You must be logged in to update items' }
+    }
+
+    const name = formData.get('name') as string
+    const category = formData.get('category') as string
+    const subcategoryId = formData.get('subcategory_id') as string || null
+    const quantity = parseInt(formData.get('quantity') as string)
+    const price = parseFloat(formData.get('price') as string)
+    const weight = formData.get('weight') ? parseFloat(formData.get('weight') as string) : null
+    const description = formData.get('description') as string
+
+    const { error } = await supabase.from('inventory_items').update({
+        name,
+        category,
+        subcategory_id: subcategoryId,
+        quantity,
+        price,
+        weight,
+        description
+    }).eq('id', id)
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath('/inventory')
+    revalidatePath(`/inventory/edit/${id}`)
+    redirect('/inventory')
+}
+
+export async function updateCategory(id: string, name: string) {
+    const supabase = await createClient()
+    const { error } = await supabase.from('categories').update({ name }).eq('id', id)
+    if (error) throw new Error(error.message)
+    revalidatePath('/inventory/categories')
+    revalidatePath('/inventory/add')
+}
+
+export async function updateSubcategory(id: string, name: string) {
+    const supabase = await createClient()
+    const { error } = await supabase.from('subcategories').update({ name }).eq('id', id)
+    if (error) throw new Error(error.message)
+    revalidatePath('/inventory/categories')
+    revalidatePath('/inventory/add')
+}

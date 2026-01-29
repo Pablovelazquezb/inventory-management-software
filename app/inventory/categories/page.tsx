@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { createCategory, deleteCategory, createSubcategory, deleteSubcategory } from '../actions'
+import { createCategory, deleteCategory, createSubcategory, deleteSubcategory, updateCategory, updateSubcategory } from '../actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 
@@ -15,6 +15,11 @@ export default function CategoriesPage() {
 
     // We'll manage active subcategory creation via local state
     const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null)
+    const [editingCatId, setEditingCatId] = useState<string | null>(null)
+    const [editingSubId, setEditingSubId] = useState<string | null>(null)
+
+    // Derived state for renaming inputs
+    const [renameValue, setRenameValue] = useState('')
 
     const [categories, setCategories] = useState<any[]>([])
     const [subcategories, setSubcategories] = useState<any[]>([])
@@ -22,7 +27,10 @@ export default function CategoriesPage() {
 
     useEffect(() => {
         fetchData()
-    }, [createCatState, createSubState])
+    }, [createCatState, createSubState]) // also should re-fetch on update actions if they were useActionState, but standard function calls need manual re-fetch or reliance on revalidatePath + client router refresh.
+    // revalidatePath handles server data, but this use effect fetches client side.
+    // Ideally we subscribe to supabase changes or just reload.
+    // For now we'll reload manually after update.
 
     async function fetchData() {
         const supabase = createClient()
@@ -34,6 +42,20 @@ export default function CategoriesPage() {
         if (cats) setCategories(cats)
         if (subs) setSubcategories(subs)
         setLoading(false)
+    }
+
+    const handleUpdateCategory = async (id: string) => {
+        await updateCategory(id, renameValue)
+        setEditingCatId(null)
+        setRenameValue('')
+        fetchData()
+    }
+
+    const handleUpdateSubcategory = async (id: string) => {
+        await updateSubcategory(id, renameValue)
+        setEditingSubId(null)
+        setRenameValue('')
+        fetchData()
     }
 
     return (
@@ -92,7 +114,24 @@ export default function CategoriesPage() {
                                             alignItems: 'center',
                                             background: 'rgba(255,255,255,0.02)'
                                         }}>
-                                            <span style={{ fontWeight: 600, fontSize: '1rem' }}>{cat.name}</span>
+                                            {editingCatId === cat.id ? (
+                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                    <input
+                                                        className="input"
+                                                        value={renameValue}
+                                                        onChange={(e) => setRenameValue(e.target.value)}
+                                                        style={{ padding: '0.3rem' }}
+                                                    />
+                                                    <button onClick={() => handleUpdateCategory(cat.id)} className="btn btn-primary" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem' }}>Save</button>
+                                                    <button onClick={() => setEditingCatId(null)} className="btn" style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', background: 'transparent', border: '1px solid var(--border)' }}>Cancel</button>
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                                    <span style={{ fontWeight: 600, fontSize: '1rem' }}>{cat.name}</span>
+                                                    <button onClick={() => { setEditingCatId(cat.id); setRenameValue(cat.name); }} style={{ background: 'none', border: 'none', cursor: 'pointer', opacity: 0.4, fontSize: '0.8rem' }}>✏️</button>
+                                                </div>
+                                            )}
+
                                             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                                                 <button
                                                     onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
@@ -128,8 +167,8 @@ export default function CategoriesPage() {
                                                     <form action={async (formData) => {
                                                         await createSubAction(formData)
                                                         setActiveCategoryId(null)
-                                                        // Note: creating subcategory revalidates path but useActionState might not reset local active state automatically, 
-                                                        // or rather, we want to close the form on success. 
+                                                        // Note: creating subcategory revalidates path but useActionState might not reset local active state automatically,
+                                                        // or rather, we want to close the form on success.
                                                         // A simplified approach for now.
                                                     }} style={{ display: 'flex', gap: '0.5rem' }}>
                                                         <input type="hidden" name="category_id" value={cat.id} />
@@ -154,18 +193,34 @@ export default function CategoriesPage() {
                                                             borderRadius: '16px',
                                                             fontSize: '0.8rem'
                                                         }}>
-                                                            <span>{sub.name}</span>
-                                                            <form action={deleteSubcategory.bind(null, sub.id)}>
-                                                                <button style={{
-                                                                    background: 'none',
-                                                                    border: 'none',
-                                                                    color: 'var(--text-secondary)',
-                                                                    cursor: 'pointer',
-                                                                    padding: 0,
-                                                                    display: 'flex',
-                                                                    alignItems: 'center'
-                                                                }}>×</button>
-                                                            </form>
+                                                            {editingSubId === sub.id ? (
+                                                                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                                                    <input
+                                                                        className="input"
+                                                                        value={renameValue}
+                                                                        onChange={(e) => setRenameValue(e.target.value)}
+                                                                        style={{ padding: '0.1rem', fontSize: '0.8rem', width: '80px' }}
+                                                                    />
+                                                                    <button onClick={() => handleUpdateSubcategory(sub.id)} style={{ fontSize: '0.7rem', color: 'var(--success)', background: 'none', border: 'none', cursor: 'pointer' }}>✓</button>
+                                                                    <button onClick={() => setEditingSubId(null)} style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'none', border: 'none', cursor: 'pointer' }}>✕</button>
+                                                                </div>
+                                                            ) : (
+                                                                <>
+                                                                    <span onClick={() => { setEditingSubId(sub.id); setRenameValue(sub.name); }} style={{ cursor: 'pointer' }}>{sub.name}</span>
+                                                                    <form action={deleteSubcategory.bind(null, sub.id)}>
+                                                                        <button style={{
+                                                                            background: 'none',
+                                                                            border: 'none',
+                                                                            color: 'var(--text-secondary)',
+                                                                            cursor: 'pointer',
+                                                                            padding: 0,
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            marginLeft: '4px'
+                                                                        }}>×</button>
+                                                                    </form>
+                                                                </>
+                                                            )}
                                                         </div>
                                                     ))}
                                                 </div>
