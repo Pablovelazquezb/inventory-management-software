@@ -61,7 +61,7 @@ export async function deleteItem(id: string) {
     revalidatePath('/dashboard')
 }
 
-export async function sellItem(id: string, quantitySold: number) {
+export async function sellItem(id: string, quantitySold: number, note?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -96,7 +96,8 @@ export async function sellItem(id: string, quantitySold: number) {
         quantity: quantitySold,
         price_per_unit: item.price,
         total_price: item.price * quantitySold,
-        user_id: user.id
+        user_id: user.id,
+        note
     })
 
     if (saleError) console.error('Error recording sale:', saleError)
@@ -105,7 +106,7 @@ export async function sellItem(id: string, quantitySold: number) {
     revalidatePath('/dashboard')
 }
 
-export async function restockItem(id: string, quantityAdded: number) {
+export async function restockItem(id: string, quantityAdded: number, note?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -134,7 +135,8 @@ export async function restockItem(id: string, quantityAdded: number) {
     await supabase.from('stock_entries').insert({
         item_id: id,
         quantity_added: quantityAdded,
-        user_id: user.id
+        user_id: user.id,
+        note
     })
 
     revalidatePath('/inventory')

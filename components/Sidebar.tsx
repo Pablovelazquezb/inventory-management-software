@@ -68,6 +68,32 @@ export default async function Sidebar() {
                         </Link>
                     </li>
                     <li>
+                        <Link href="/inventory/restock" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '8px',
+                            color: 'rgba(255,255,255,0.6)',
+                            fontWeight: 500,
+                            transition: 'all 0.2s'
+                        }}>
+                            + Add Stock
+                        </Link>
+                    </li>
+                    <li>
+                        <Link href="/inventory/sell" style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0.75rem 1rem',
+                            borderRadius: '8px',
+                            color: 'rgba(255,255,255,0.6)',
+                            fontWeight: 500,
+                            transition: 'all 0.2s'
+                        }}>
+                            Sell Items
+                        </Link>
+                    </li>
+                    <li>
                         <Link href="/inventory/add" style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -77,7 +103,7 @@ export default async function Sidebar() {
                             fontWeight: 500,
                             transition: 'all 0.2s'
                         }}>
-                            Add Item
+                            Create Item
                         </Link>
                     </li>
                 </ul>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { deleteItem, splitItem, sellItem, restockItem } from './actions'
+import { deleteItem, splitItem } from './actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 
@@ -35,10 +35,6 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
 
     // Sub-action states
     const [splittingId, setSplittingId] = useState<string | null>(null)
-    const [actionId, setActionId] = useState<string | null>(null) // ID of item being acted on (sell/restock)
-    const [actionType, setActionType] = useState<'sell' | 'restock' | null>(null)
-    const [actionQuantity, setActionQuantity] = useState<string>('')
-    const [actionLoading, setActionLoading] = useState(false)
 
     const toggleGroup = (key: string) => {
         setExpandedGroups(prev => ({ ...prev, [key]: !prev[key] }))
@@ -47,37 +43,9 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
     const startEdit = (item: any) => {
         setEditingId(item.id)
         setEditWeight(item.weight || '')
-        // Close other actions
-        setActionId(null)
     }
 
-    const startAction = (item: any, type: 'sell' | 'restock') => {
-        setActionId(item.id)
-        setActionType(type)
-        setActionQuantity('1')
-        // Close other edits
-        setEditingId(null)
-    }
 
-    const confirmAction = async () => {
-        if (!actionId || !actionType) return
-
-        const qty = parseInt(actionQuantity)
-        if (isNaN(qty) || qty <= 0) {
-            alert('Invalid quantity')
-            return
-        }
-
-        setActionLoading(true)
-        if (actionType === 'sell') {
-            await sellItem(actionId, qty)
-        } else {
-            await restockItem(actionId, qty)
-        }
-
-        // Refresh
-        window.location.reload()
-    }
 
     const saveWeight = async (id: string) => {
         const supabase = createClient()
@@ -189,26 +157,8 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
                                                                 <tr key={item.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
                                                                     <td style={{ padding: '0.5rem 0', fontFamily: 'monospace', opacity: 0.5 }}>...{item.id.slice(-4)}</td>
                                                                     <td style={{ padding: '0.5rem 0' }}>
-                                                                        {/* Stock Display / Action Form */}
-                                                                        {actionId === item.id ? (
-                                                                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                                                                <span style={{ fontWeight: 600, color: actionType === 'sell' ? 'var(--error)' : 'var(--success)' }}>
-                                                                                    {actionType === 'sell' ? 'Sell' : 'Add'}:
-                                                                                </span>
-                                                                                <input
-                                                                                    type="number"
-                                                                                    value={actionQuantity}
-                                                                                    onChange={(e) => setActionQuantity(e.target.value)}
-                                                                                    className="input"
-                                                                                    style={{ width: '60px', padding: '0.2rem' }}
-                                                                                    onClick={(e) => e.stopPropagation()}
-                                                                                />
-                                                                                <button onClick={(e) => { e.stopPropagation(); confirmAction(); }} disabled={actionLoading} className="btn btn-primary" style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem' }}>✓</button>
-                                                                                <button onClick={(e) => { e.stopPropagation(); setActionId(null); }} className="btn" style={{ padding: '0.2rem 0.4rem', fontSize: '0.75rem', background: 'transparent' }}>✕</button>
-                                                                            </div>
-                                                                        ) : (
-                                                                            <span style={{ fontWeight: 500 }}>{item.quantity}</span>
-                                                                        )}
+                                                                        {/* Stock Display */}
+                                                                        <span style={{ fontWeight: 500 }}>{item.quantity}</span>
                                                                     </td>
                                                                     <td style={{ padding: '0.5rem 0' }}>
                                                                         {editingId === item.id ? (
@@ -234,38 +184,9 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
                                                                     </td>
                                                                     <td style={{ padding: '0.5rem 0', textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', alignItems: 'center' }}>
                                                                         {/* Action Buttons */}
-                                                                        {!actionId && (
-                                                                            <>
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); startAction(item, 'sell'); }}
-                                                                                    className="btn"
-                                                                                    style={{
-                                                                                        padding: '0.2rem 0.6rem',
-                                                                                        fontSize: '0.75rem',
-                                                                                        background: 'rgba(255, 255, 255, 0.1)',
-                                                                                        border: 'none',
-                                                                                        color: 'var(--foreground)'
-                                                                                    }}
-                                                                                >
-                                                                                    Sell
-                                                                                </button>
-                                                                                <button
-                                                                                    onClick={(e) => { e.stopPropagation(); startAction(item, 'restock'); }}
-                                                                                    className="btn"
-                                                                                    style={{
-                                                                                        padding: '0.2rem 0.6rem',
-                                                                                        fontSize: '0.75rem',
-                                                                                        background: 'rgba(255, 255, 255, 0.1)',
-                                                                                        border: 'none',
-                                                                                        color: 'var(--success)'
-                                                                                    }}
-                                                                                >
-                                                                                    + Add
-                                                                                </button>
-                                                                            </>
-                                                                        )}
 
-                                                                        {item.quantity > 1 && !actionId && (
+
+                                                                        {item.quantity > 1 && (
                                                                             <button
                                                                                 onClick={(e) => { e.stopPropagation(); handleSplit(item.id); }}
                                                                                 disabled={splittingId === item.id}
