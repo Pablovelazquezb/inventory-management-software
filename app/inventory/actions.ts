@@ -67,6 +67,8 @@ export async function sellItem(id: string, quantitySold: number) {
 
     if (!user) return { error: 'Unauthorized' }
 
+    if (quantitySold <= 0) return { error: 'Quantity must be greater than zero' }
+
     // Get item
     const { data: item, error: fetchError } = await supabase
         .from('inventory_items')
@@ -75,7 +77,9 @@ export async function sellItem(id: string, quantitySold: number) {
         .single()
 
     if (fetchError || !item) return { error: 'Item not found' }
-    if (item.quantity < quantitySold) return { error: 'Insufficient stock' }
+    if (item.quantity < quantitySold) {
+        return { error: `Insufficient stock. You only have ${item.quantity} units available.` }
+    }
 
     // Decrement stock
     const { error: updateError } = await supabase
@@ -106,6 +110,8 @@ export async function restockItem(id: string, quantityAdded: number) {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return { error: 'Unauthorized' }
+
+    if (quantityAdded <= 0) return { error: 'Quantity must be greater than zero' }
 
     // Get item
     const { data: item, error: fetchError } = await supabase
