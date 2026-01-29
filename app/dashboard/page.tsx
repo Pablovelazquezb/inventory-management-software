@@ -1,6 +1,7 @@
 
 import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
+import DashboardCharts from './DashboardCharts'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -66,6 +67,9 @@ export default async function DashboardPage() {
                     </div>
                 </div>
             </div>
+
+            {/* Charts */}
+            <DashboardCharts sales={sales || []} />
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
                 {/* Recent Sales */}
