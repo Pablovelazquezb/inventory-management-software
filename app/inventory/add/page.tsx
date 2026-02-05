@@ -65,6 +65,7 @@ export default function AddItemPage() {
         const count = Math.max(1, batchCount)
         const newVariants = Array(count).fill(null).map(() => ({
             name: '', // Individual name
+            price: '', // Individual price
             weight: '',
             quantity: '1'
         }))
@@ -82,7 +83,7 @@ export default function AddItemPage() {
     }
 
     const addVariant = () => {
-        setVariants([...variants, { name: '', weight: '', quantity: '1' }])
+        setVariants([...variants, { name: '', price: '', weight: '', quantity: '1' }])
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -174,8 +175,16 @@ export default function AddItemPage() {
 
                     {/* Common Fields */}
                     <div>
-                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Item Name</label>
-                        <input className="input" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} placeholder="e.g. Premium Widget" required />
+                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>
+                            {mode === 'batch' ? 'Group Name (Optional)' : 'Item Name'}
+                        </label>
+                        <input
+                            className="input"
+                            value={formData.name}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            placeholder={mode === 'batch' ? "e.g. Mixed Equipment (Optional)" : "e.g. Premium Widget"}
+                            required={mode === 'simple'}
+                        />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -201,8 +210,10 @@ export default function AddItemPage() {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Price ($) (per unit)</label>
-                            <input className="input" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required placeholder="0.00" />
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>
+                                {mode === 'batch' ? 'Default Price ($)' : 'Price ($) (per unit)'}
+                            </label>
+                            <input className="input" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required={mode === 'simple'} placeholder="0.00" />
                         </div>
                         <div>
                             <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Unit Type</label>
@@ -253,20 +264,29 @@ export default function AddItemPage() {
 
                             {variants.length > 0 && (
                                 <div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                                         <div>Name (Optional)</div>
+                                        <div>Price ($)</div>
                                         <div>Quantity</div>
                                         <div>Weight (kg)</div>
                                         <div></div>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                         {variants.map((v, i) => (
-                                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 40px', gap: '1rem', alignItems: 'center' }}>
+                                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 40px', gap: '1rem', alignItems: 'center' }}>
                                                 <input
                                                     className="input"
                                                     value={v.name || ''}
                                                     onChange={e => updateVariant(i, 'name', e.target.value)}
                                                     placeholder={formData.name || "Item name"}
+                                                />
+                                                <input
+                                                    className="input"
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={v.price}
+                                                    onChange={e => updateVariant(i, 'price', e.target.value)}
+                                                    placeholder={formData.price || "Price"}
                                                 />
                                                 <input
                                                     className="input"

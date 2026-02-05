@@ -369,7 +369,8 @@ export async function createBatchItems(prevState: any, formData: FormData) {
         category,
         subcategory_id: subcategoryId,
         quantity: parseFloat(v.quantity) || 1,
-        price,
+        price: v.price ? parseFloat(v.price) : price, // Use variant price if provided, else fallback to common price
+
         weight: v.weight ? parseFloat(v.weight) : null,
         unit_type: unitType,
         description,
