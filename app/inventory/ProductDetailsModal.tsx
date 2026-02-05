@@ -34,7 +34,10 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                 .limit(5)
 
             if (salesError || entriesError) {
-                console.error('Error fetching history', salesError, entriesError)
+                console.error('Error fetching history:', {
+                    salesError: salesError ? JSON.stringify(salesError) : null,
+                    entriesError: entriesError ? JSON.stringify(entriesError) : null
+                })
             }
 
             // Combine and sort

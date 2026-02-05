@@ -346,7 +346,7 @@ export async function createBatchItems(prevState: any, formData: FormData) {
     if (!user) return { error: 'Unauthorized' }
 
     // Common fields
-    const name = formData.get('name') as string
+
     const category = formData.get('category') as string
     const subcategoryId = formData.get('subcategory_id') as string || null
     const price = parseFloat(formData.get('price') as string)
@@ -364,18 +364,27 @@ export async function createBatchItems(prevState: any, formData: FormData) {
 
     if (!variants || variants.length === 0) return { error: 'No variants provided' }
 
-    const itemsToInsert = variants.map(v => ({
-        name: v.name || name, // Use variant name if provided, else common name
-        category,
-        subcategory_id: subcategoryId,
-        quantity: parseFloat(v.quantity) || 1,
-        price: v.price ? parseFloat(v.price) : price, // Use variant price if provided, else fallback to common price
+    const itemsToInsert = variants.map(v => {
+        // Handle SKU: Use provided ID or generate default
+        let sku = v.id && v.id.trim() !== '' ? v.id.trim() : null
+        if (!sku) {
+            // Generate simple random SKU: ITEM-XXXXXX
+            sku = `ITEM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+        }
 
-        weight: v.weight ? parseFloat(v.weight) : null,
-        unit_type: unitType,
-        description,
-        user_id: user.id
-    }))
+        return {
+            name: v.name,
+            category,
+            subcategory_id: subcategoryId,
+            quantity: parseFloat(v.quantity) || 1,
+            price: v.price ? parseFloat(v.price) : price,
+            sku: sku, // Save to new SKU column
+            weight: v.weight ? parseFloat(v.weight) : null,
+            unit_type: unitType,
+            description,
+            user_id: user.id
+        }
+    })
 
     const { data: insertedItems, error: insertError } = await supabase
         .from('inventory_items')
@@ -399,4 +408,89 @@ export async function createBatchItems(prevState: any, formData: FormData) {
     revalidatePath('/inventory')
     revalidatePath('/dashboard')
     redirect('/inventory')
+}
+
+// Batch sell items (Shopping Cart style)
+export async function sellBatchItems(
+    cartItems: { id: string; quantity: number; price: number }[],
+    note?: string,
+    invoice_url?: string
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+    if (!cartItems || cartItems.length === 0) return { error: 'No items in cart' }
+
+    // Validate all items first
+    for (const cartItem of cartItems) {
+        if (cartItem.quantity <= 0) return { error: `Invalid quantity for item ID ${cartItem.id}` }
+    }
+
+    // Process each item
+    const errors = []
+    const successfulSales = []
+
+    // 1. Verify Stock
+    const itemIds = cartItems.map(c => c.id)
+    const { data: dbItems, error: fetchError } = await supabase
+        .from('inventory_items')
+        .select('id, quantity, name')
+        .in('id', itemIds)
+
+    if (fetchError || !dbItems) return { error: 'Failed to fetch item details' }
+
+    const dbItemMap = new Map(dbItems.map(i => [i.id, i]))
+
+    for (const cartItem of cartItems) {
+        const dbItem = dbItemMap.get(cartItem.id)
+        if (!dbItem) return { error: `Item not found: ${cartItem.id}` }
+        if (dbItem.quantity < cartItem.quantity) {
+            return { error: `Insufficient stock for ${dbItem.name}. Available: ${dbItem.quantity}` }
+        }
+    }
+
+    // 2. Execute Updates and Inserts
+    for (const cartItem of cartItems) {
+        const dbItem = dbItemMap.get(cartItem.id)!
+
+        // Deduct Stock
+        const { error: updateError } = await supabase
+            .from('inventory_items')
+            .update({ quantity: dbItem.quantity - cartItem.quantity })
+            .eq('id', cartItem.id)
+
+        if (updateError) {
+            console.error(`Failed to update stock for ${dbItem.name}:`, updateError)
+            errors.push(`Failed to update ${dbItem.name}`)
+            continue
+        }
+
+        // Record Sale
+        const { error: saleError } = await supabase.from('sales').insert({
+            item_id: cartItem.id,
+            item_name: dbItem.name,
+            quantity: cartItem.quantity,
+            price_per_unit: cartItem.price, // Uses the custom price from cart
+            total_price: cartItem.price * cartItem.quantity,
+            user_id: user.id,
+            note,
+            invoice_url
+        })
+
+        if (saleError) {
+            console.error(`Failed to record sale for ${dbItem.name}:`, saleError)
+        } else {
+            successfulSales.push(dbItem.name)
+        }
+    }
+
+    revalidatePath('/inventory')
+    revalidatePath('/dashboard')
+
+    if (errors.length > 0) {
+        return { error: `Completed with errors: ${errors.join(', ')}` }
+    }
+
+    return { success: true }
 }

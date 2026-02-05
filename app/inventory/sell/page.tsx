@@ -2,8 +2,16 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { sellItem } from '../actions'
+import { sellBatchItems } from '../actions'
 import Link from 'next/link'
+
+interface CartItem {
+    id: string
+    name: string
+    quantity: number
+    price: number
+    maxStock: number
+}
 
 export default function SellPage() {
     const [items, setItems] = useState<any[]>([])
@@ -11,13 +19,13 @@ export default function SellPage() {
     const [loading, setLoading] = useState(true)
     const [submitting, setSubmitting] = useState(false)
 
-    // Form state
-    const [selectedItemId, setSelectedItemId] = useState('')
-    const [quantity, setQuantity] = useState('1')
+    // Cart state
+    const [cart, setCart] = useState<CartItem[]>([])
     const [note, setNote] = useState('')
-    const [searchTerm, setSearchTerm] = useState('')
     const [invoiceUrl, setInvoiceUrl] = useState('')
     const [uploading, setUploading] = useState(false)
+    const [searchTerm, setSearchTerm] = useState('')
+    const [showSuggestions, setShowSuggestions] = useState(false)
 
     useEffect(() => {
         fetchData()
@@ -29,7 +37,7 @@ export default function SellPage() {
         // Fetch items for selection
         const { data: itemsData } = await supabase
             .from('inventory_items')
-            .select('id, name, quantity, price, category')
+            .select('id, name, quantity, price, category, sku')
             .order('name')
 
         if (itemsData) setItems(itemsData)
@@ -48,40 +56,73 @@ export default function SellPage() {
 
     const filteredItems = items.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.category && item.category.toLowerCase().includes(searchTerm.toLowerCase()))
+        (item.sku && item.sku.toLowerCase().includes(searchTerm.toLowerCase()))
     )
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        if (!selectedItemId) return
+    const addToCart = (item: any) => {
+        // specific check
+        if (item.quantity <= 0) {
+            alert('Out of stock')
+            return
+        }
+
+        // Check if already in cart
+        const existing = cart.find(c => c.id === item.id)
+        if (existing) {
+            if (existing.quantity >= item.quantity) {
+                alert('Max stock reached in cart')
+                return
+            }
+            updateCartItem(item.id, 'quantity', existing.quantity + 1)
+        } else {
+            setCart([...cart, {
+                id: item.id,
+                name: item.name,
+                quantity: 1,
+                price: item.price,
+                maxStock: item.quantity
+            }])
+        }
+        setSearchTerm('')
+    }
+
+    const updateCartItem = (id: string, field: 'quantity' | 'price', value: number) => {
+        setCart(cart.map(item => {
+            if (item.id !== id) return item
+
+            if (field === 'quantity') {
+                // validation
+                if (value > item.maxStock) {
+                    alert(`Max stock is ${item.maxStock}`)
+                    return item
+                }
+                if (value < 1) return item
+            }
+
+            return { ...item, [field]: value }
+        }))
+    }
+
+    const removeFromCart = (id: string) => {
+        setCart(cart.filter(item => item.id !== id))
+    }
+
+    const handleSubmit = async () => {
+        if (cart.length === 0) return
 
         setSubmitting(true)
-        const qty = parseInt(quantity)
 
-        if (isNaN(qty) || qty <= 0) {
-            alert('Please enter a valid quantity')
-            setSubmitting(false)
-            return
+        const result = await sellBatchItems(cart, note, invoiceUrl)
+
+        if (result?.error) {
+            alert(result.error)
+        } else {
+            // Success
+            setCart([])
+            setNote('')
+            setInvoiceUrl('')
+            await fetchData() // Refresh stock
         }
-
-        const item = items.find(i => i.id === selectedItemId)
-        if (item && item.quantity < qty) {
-            alert(`Insufficient stock! Only ${item.quantity} available.`)
-            setSubmitting(false)
-            return
-        }
-
-        await sellItem(selectedItemId, qty, note, invoiceUrl)
-
-        // Reset form
-        setInvoiceUrl('')
-
-        // Reset form and refresh data
-        setQuantity('1')
-        setNote('')
-        setSearchTerm('')
-        // setSelectedItemId('') 
-        await fetchData()
         setSubmitting(false)
     }
 
@@ -94,7 +135,7 @@ export default function SellPage() {
         const supabase = createClient()
         const fileExt = file.name.split('.').pop()
         const fileName = `${Math.random()}.${fileExt}`
-        const filePath = `sales/${fileName}` // sales subfolder
+        const filePath = `sales/${fileName}`
 
         const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file)
 
@@ -109,7 +150,7 @@ export default function SellPage() {
         setUploading(false)
     }
 
-    const selectedItem = items.find(i => i.id === selectedItemId)
+    const totalAmount = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0)
 
     return (
         <div style={{ paddingBottom: '4rem' }}>
@@ -118,173 +159,191 @@ export default function SellPage() {
                     ← Back to Inventory
                 </Link>
                 <h2 style={{ fontSize: '2rem', fontWeight: 700 }}>Record Sale</h2>
-                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Sell items from inventory and track revenue.</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)' }}>Add items to cart, adjust prices if needed, and confirm.</p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem', alignItems: 'start' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(400px, 2fr) 1fr', gap: '2rem', alignItems: 'start' }}>
 
-                {/* Form Section */}
-                <div className="card" style={{ padding: '2rem' }}>
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Left Column: Product Search & Cart */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-                        {/* Item Selection */}
-                        <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Select Item</label>
+                    const [showSuggestions, setShowSuggestions] = useState(false)
 
-                            {!selectedItemId ? (
-                                <div>
-                                    <input
-                                        className="input"
-                                        placeholder="Search items..."
-                                        value={searchTerm}
-                                        onChange={e => setSearchTerm(e.target.value)}
-                                        style={{ marginBottom: '0.5rem' }}
-                                    />
-                                    <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                                        {filteredItems.length > 0 ? filteredItems.map(item => (
-                                            <div
-                                                key={item.id}
-                                                onClick={() => { setSelectedItemId(item.id); setSearchTerm(''); }}
-                                                style={{
-                                                    padding: '0.75rem',
-                                                    cursor: 'pointer',
-                                                    borderBottom: '1px solid var(--border)',
-                                                    background: 'rgba(255,255,255,0.02)',
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between'
-                                                }}
-                                                className="hover-bg"
-                                            >
-                                                <span>{item.name}</span>
-                                                <div style={{ textAlign: 'right' }}>
-                                                    <span style={{ fontSize: '0.875rem', display: 'block' }}>${item.price}</span>
-                                                    <span style={{ opacity: 0.5, fontSize: '0.75rem' }}>Stock: {item.quantity}</span>
-                                                </div>
-                                            </div>
-                                        )) : (
-                                            <div style={{ padding: '1rem', textAlign: 'center', opacity: 0.5 }}>No items found</div>
-                                        )}
-                                    </div>
-                                </div>
-                            ) : (
-                                <div style={{
-                                    padding: '1rem',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    border: '1px solid var(--primary)'
-                                }}>
-                                    <div>
-                                        <div style={{ fontWeight: 600 }}>{selectedItem?.name}</div>
-                                        <div style={{ fontSize: '0.875rem', opacity: 0.6 }}>Price: ${selectedItem?.price} | Stock: {selectedItem?.quantity}</div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedItemId('')}
-                                        className="btn"
-                                        style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}
+                    // ... inside return ...
+
+                    {/* Search */}
+                    <div className="card" style={{ padding: '1.5rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Add Item to Sale</label>
+                        <input
+                            className="input"
+                            placeholder="Type name or SKU..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            onFocus={() => setShowSuggestions(true)}
+                            onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} // Delay to allow click
+                        />
+                        {(searchTerm || showSuggestions) && (
+                            <div style={{ marginTop: '0.5rem', maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
+                                {filteredItems.length > 0 ? filteredItems.map(item => (
+                                    <div
+                                        key={item.id}
+                                        onClick={() => addToCart(item)}
+                                        style={{
+                                            padding: '0.75rem',
+                                            cursor: 'pointer',
+                                            borderBottom: '1px solid var(--border)',
+                                            background: 'rgba(255,255,255,0.02)',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center'
+                                        }}
+                                        className="hover-bg"
                                     >
-                                        Change
-                                    </button>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Quantity */}
-                        <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Quantity Sold</label>
-                            <input
-                                className="input"
-                                type="number"
-                                value={quantity}
-                                onChange={e => setQuantity(e.target.value)}
-                                min="1"
-                                required
-                            />
-                        </div>
-
-                        {/* Note */}
-                        <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Note <span style={{ opacity: 0.5 }}>(Optional)</span></label>
-                            <textarea
-                                className="input"
-                                value={note}
-                                onChange={e => setNote(e.target.value)}
-                                placeholder="e.g. Customer Name or Discount Reason"
-                                rows={3}
-                            />
-                        </div>
-
-                        {/* Invoice Upload */}
-                        <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Invoice (Optional)</label>
-                            <input
-                                type="file"
-                                className="input"
-                                onChange={handleFileUpload}
-                                accept=".pdf,.xml,.jpg,.png"
-                            />
-                            {uploading && <span style={{ fontSize: '0.8em', color: 'var(--primary)' }}>Uploading...</span>}
-                            {invoiceUrl && <span style={{ fontSize: '0.8em', color: 'var(--success)' }}>✓ Attached</span>}
-                        </div>
-
-                        <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginTop: '0.5rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                <span style={{ opacity: 0.7 }}>Unit Price</span>
-                                <span>${selectedItem?.price || 0}</span>
+                                        <div>
+                                            <div style={{ fontWeight: 500 }}>{item.name}</div>
+                                            <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{item.sku}</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontWeight: 600 }}>${item.price}</div>
+                                            <div style={{ fontSize: '0.75rem', opacity: item.quantity > 0 ? 0.5 : 1, color: item.quantity > 0 ? 'inherit' : 'var(--error)' }}>
+                                                {item.quantity} in stock
+                                            </div>
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div style={{ padding: '1rem', opacity: 0.5, textAlign: 'center' }}>No matches found</div>
+                                )}
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: '1.25rem' }}>
-                                <span>Total</span>
-                                <span>${((selectedItem?.price || 0) * (parseInt(quantity) || 0)).toFixed(2)}</span>
-                            </div>
-                        </div>
-
-                        <button
-                            type="submit"
-                            className="btn btn-primary"
-                            disabled={submitting || !selectedItemId}
-                            style={{ padding: '1rem', justifyContent: 'center', background: 'var(--foreground)', color: 'var(--background)' }}
-                        >
-                            {submitting ? 'Processing Sale...' : 'Confirm Sale'}
-                        </button>
-                    </form>
-                </div>
-
-                {/* History Section */}
-                <div className="card" style={{ padding: 0, overflow: 'hidden', height: 'fit-content' }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
-                        <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Recent Sales</h3>
+                        )}
                     </div>
-                    <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
-                        {sales.length > 0 ? (
-                            <table style={{ width: '100%', fontSize: '0.875rem', borderCollapse: 'collapse' }}>
+
+                    {/* Cart List */}
+                    <div className="card" style={{ padding: '0', overflow: 'hidden' }}>
+                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', fontWeight: 600 }}>
+                            Current Sale Items ({cart.length})
+                        </div>
+                        {cart.length > 0 ? (
+                            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                                <thead style={{ background: 'rgba(255,255,255,0.02)', fontSize: '0.75rem', opacity: 0.7 }}>
+                                    <tr>
+                                        <th style={{ textAlign: 'left', padding: '0.75rem' }}>Item</th>
+                                        <th style={{ textAlign: 'center', padding: '0.75rem', width: '80px' }}>Qty</th>
+                                        <th style={{ textAlign: 'center', padding: '0.75rem', width: '100px' }}>Unit Price</th>
+                                        <th style={{ textAlign: 'right', padding: '0.75rem', width: '80px' }}>Total</th>
+                                        <th style={{ width: '40px' }}></th>
+                                    </tr>
+                                </thead>
                                 <tbody>
-                                    {sales.map(sale => (
-                                        <tr key={sale.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                            <td style={{ padding: '1rem' }}>
-                                                <div style={{ fontWeight: 500 }}>{sale.item_name}</div>
-                                                {sale.note && (
-                                                    <div style={{ fontSize: '0.75rem', opacity: 0.6, marginTop: '2px', fontStyle: 'italic' }}>
-                                                        "{sale.note}"
-                                                    </div>
-                                                )}
+                                    {cart.map(item => (
+                                        <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                            <td style={{ padding: '0.75rem' }}>
+                                                <div style={{ fontWeight: 500 }}>{item.name}</div>
+                                                <div style={{ fontSize: '0.7rem', opacity: 0.5 }}>Stock: {item.maxStock}</div>
                                             </td>
-                                            <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                                <div style={{ fontWeight: 600 }}>${sale.total_price}</div>
-                                                <div style={{ fontSize: '0.75rem', opacity: 0.4 }}>
-                                                    Qty: {sale.quantity}
-                                                </div>
+                                            <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                                <input
+                                                    type="number"
+                                                    value={item.quantity}
+                                                    onChange={e => updateCartItem(item.id, 'quantity', parseFloat(e.target.value))}
+                                                    className="input"
+                                                    style={{ padding: '4px', textAlign: 'center' }}
+                                                    min="1"
+                                                />
+                                            </td>
+                                            <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                                <input
+                                                    type="number"
+                                                    value={item.price}
+                                                    onChange={e => updateCartItem(item.id, 'price', parseFloat(e.target.value))}
+                                                    className="input"
+                                                    style={{ padding: '4px', textAlign: 'center' }}
+                                                    min="0"
+                                                />
+                                            </td>
+                                            <td style={{ padding: '0.75rem', textAlign: 'right', fontWeight: 600 }}>
+                                                ${(item.price * item.quantity).toFixed(2)}
+                                            </td>
+                                            <td style={{ padding: '0.75rem', textAlign: 'center' }}>
+                                                <button
+                                                    onClick={() => removeFromCart(item.id)}
+                                                    style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                                >
+                                                    ×
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
                                 </tbody>
                             </table>
                         ) : (
-                            <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>No recent sales</div>
+                            <div style={{ padding: '3rem', textAlign: 'center', opacity: 0.3 }}>
+                                Cart is empty
+                            </div>
                         )}
                     </div>
+                </div>
+
+                {/* Right Column: Checkout Details & History */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                    {/* Checkout Card */}
+                    <div className="card" style={{ padding: '1.5rem', background: 'var(--surface-light)', border: '1px solid var(--primary-dark)' }}>
+                        <h3 style={{ marginTop: 0 }}>Summary</h3>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>Note <span style={{ opacity: 0.5 }}>(Optional)</span></label>
+                            <textarea
+                                className="input"
+                                value={note}
+                                onChange={e => setNote(e.target.value)}
+                                rows={2}
+                                placeholder="Customer name, etc."
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.85rem', marginBottom: '0.5rem', opacity: 0.8 }}>Invoice <span style={{ opacity: 0.5 }}>(Optional)</span></label>
+                            <input type="file" onChange={handleFileUpload} style={{ fontSize: '0.8rem' }} />
+                            {uploading && <div style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Uploading...</div>}
+                            {invoiceUrl && <div style={{ fontSize: '0.8rem', color: 'var(--success)' }}>✓ Attached</div>}
+                        </div>
+
+                        <div style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                            <span>Total</span>
+                            <span>${totalAmount.toFixed(2)}</span>
+                        </div>
+
+                        <button
+                            className="btn btn-primary"
+                            style={{ width: '100%', padding: '1rem', justifyContent: 'center', fontSize: '1rem' }}
+                            onClick={handleSubmit}
+                            disabled={cart.length === 0 || submitting}
+                        >
+                            {submitting ? 'Processing...' : 'Complete Sale'}
+                        </button>
+                    </div>
+
+                    {/* Recent Sales History */}
+                    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                        <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Recent Activity</h3>
+                        </div>
+                        <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                            {sales.map(sale => (
+                                <div key={sale.id} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', fontSize: '0.85rem', display: 'flex', justifyContent: 'space-between' }}>
+                                    <div>
+                                        <div style={{ fontWeight: 500 }}>{sale.item_name}</div>
+                                        <div style={{ opacity: 0.5, fontSize: '0.75rem' }}>{new Date(sale.sold_at).toLocaleDateString()}</div>
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontWeight: 600 }}>${sale.total_price}</div>
+                                        <div style={{ opacity: 0.5 }}>{sale.quantity} qty</div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                 </div>
 
             </div>

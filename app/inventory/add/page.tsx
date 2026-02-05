@@ -1,6 +1,6 @@
 'use client'
 
-import { createItem, createBatchItems } from '../actions' // Ensure createBatchItems is exported
+import { createBatchItems } from '../actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
@@ -12,7 +12,6 @@ export default function AddItemPage() {
     const [subcategories, setSubcategories] = useState<any[]>([])
 
     // Form State
-    const [mode, setMode] = useState<'simple' | 'batch'>('simple')
     const [selectedCategory, setSelectedCategory] = useState<string>('')
     const [filteredSubcategories, setFilteredSubcategories] = useState<any[]>([])
 
@@ -21,18 +20,15 @@ export default function AddItemPage() {
 
     // Common Inputs
     const [formData, setFormData] = useState({
-        name: '',
+        // name: '', // Removed Group Name
         category: '',
         subcategory_id: '',
         price: '',
         unit_type: 'unit',
-        description: '',
-        // Simple mode specifics
-        quantity: '',
-        weight: ''
+        description: ''
     })
 
-    // Batch Mode State
+    // Batch Mode State (Always Active)
     const [batchCount, setBatchCount] = useState(1)
     const [variants, setVariants] = useState<any[]>([])
 
@@ -64,6 +60,7 @@ export default function AddItemPage() {
     const handleGenerateVariants = () => {
         const count = Math.max(1, batchCount)
         const newVariants = Array(count).fill(null).map(() => ({
+            id: '', // Custom ID
             name: '', // Individual name
             price: '', // Individual price
             weight: '',
@@ -83,7 +80,7 @@ export default function AddItemPage() {
     }
 
     const addVariant = () => {
-        setVariants([...variants, { name: '', price: '', weight: '', quantity: '1' }])
+        setVariants([...variants, { id: '', name: '', price: '', weight: '', quantity: '1' }])
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -92,101 +89,38 @@ export default function AddItemPage() {
         setError('')
 
         const submitData = new FormData()
-        submitData.append('name', formData.name)
+        // submitData.append('name', formData.name) // Removed Group Name
         submitData.append('category', formData.category)
         submitData.append('subcategory_id', formData.subcategory_id)
         submitData.append('price', formData.price)
         submitData.append('unit_type', formData.unit_type)
         submitData.append('description', formData.description)
 
-        if (mode === 'simple') {
-            submitData.append('quantity', formData.quantity)
-            submitData.append('weight', formData.weight)
+        // Validate IDs if provided (optional or required? User said "can edit id", implies optional or manual)
+        // We pass it to backend.
 
-            // Assuming createItem is available and we can call it directly or wrap it
-            // Since we are client-side preventing default form action, we need to match the signature or use useActionState
-            // But switching modes makes useActionState complex. Calling action directly is cleaner here.
+        submitData.append('variants', JSON.stringify(variants))
+        const result = await createBatchItems(null, submitData)
+        if (result?.error) setError(result.error)
 
-            // We need to import the action. 
-            // NOTE: Server Actions return a value, they don't throw usually if we handled it.
-            const result = await createItem(null, submitData)
-            if (result?.error) setError(result.error)
-            // Redirect is handled by action if successful
-        } else {
-            // Batch Mode
-            submitData.append('variants', JSON.stringify(variants))
-            const result = await createBatchItems(null, submitData)
-            if (result?.error) setError(result.error)
-        }
         setIsPending(false)
     }
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem' }}>
+        <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '4rem' }}>
             <div style={{ marginBottom: '2rem' }}>
                 <Link href="/inventory" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
                     ← Back to Inventory
                 </Link>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Add New Item</h2>
-
-                    {/* Mode Toggle */}
-                    <div style={{ background: 'rgba(255,255,255,0.05)', borderRadius: '8px', padding: '4px', display: 'flex' }}>
-                        <button
-                            type="button"
-                            onClick={() => setMode('simple')}
-                            style={{
-                                border: 'none',
-                                background: mode === 'simple' ? 'var(--primary)' : 'transparent',
-                                color: mode === 'simple' ? 'white' : 'rgba(255,255,255,0.6)',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '6px',
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            Simple
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => setMode('batch')}
-                            style={{
-                                border: 'none',
-                                background: mode === 'batch' ? 'var(--primary)' : 'transparent',
-                                color: mode === 'batch' ? 'white' : 'rgba(255,255,255,0.6)',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '6px',
-                                fontSize: '0.875rem',
-                                fontWeight: 500,
-                                cursor: 'pointer',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            Batch / Variants
-                        </button>
-                    </div>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Add New Items</h2>
                 </div>
             </div>
 
             <div className="card">
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-                    {/* Common Fields */}
-                    <div>
-                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>
-                            {mode === 'batch' ? 'Group Name (Optional)' : 'Item Name'}
-                        </label>
-                        <input
-                            className="input"
-                            value={formData.name}
-                            onChange={e => setFormData({ ...formData, name: e.target.value })}
-                            placeholder={mode === 'batch' ? "e.g. Mixed Equipment (Optional)" : "e.g. Premium Widget"}
-                            required={mode === 'simple'}
-                        />
-                    </div>
-
+                    {/* Common Fields Row 1 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
@@ -195,8 +129,8 @@ export default function AddItemPage() {
                             </div>
                             <select className="input" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} required>
                                 <option value="" disabled>Select a category</option>
+                                <option value="Uncategorized">Uncategorized</option>
                                 {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                                {categories.length === 0 && <option value="Uncategorized">Uncategorized</option>}
                             </select>
                         </div>
                         <div>
@@ -208,12 +142,13 @@ export default function AddItemPage() {
                         </div>
                     </div>
 
+                    {/* Common Fields Row 2 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
                             <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>
-                                {mode === 'batch' ? 'Default Price ($)' : 'Price ($) (per unit)'}
+                                Default Price ($)
                             </label>
-                            <input className="input" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} required={mode === 'simple'} placeholder="0.00" />
+                            <input className="input" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} placeholder="0.00" />
                         </div>
                         <div>
                             <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Unit Type</label>
@@ -224,108 +159,102 @@ export default function AddItemPage() {
                         </div>
                     </div>
 
-                    {/* Mode Specifics */}
-                    {mode === 'simple' ? (
-                        <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                                <div>
-                                    <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Total Quantity</label>
-                                    <input className="input" type="number" step="any" value={formData.quantity} onChange={e => setFormData({ ...formData, quantity: e.target.value })} required placeholder="0" />
-                                </div>
-                                <div>
-                                    <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Weight (kg) <span style={{ fontSize: '0.8em', opacity: 0.5 }}>(Optional)</span></label>
-                                    <input className="input" type="number" step="0.01" value={formData.weight} onChange={e => setFormData({ ...formData, weight: e.target.value })} placeholder="0.00" />
-                                </div>
+                    {/* Variants Section (Always Visible) */}
+                    <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <label className="text-md" style={{ opacity: 0.8 }}>Generate Item Slots</label>
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <input
+                                    className="input"
+                                    type="number"
+                                    min="1"
+                                    value={batchCount}
+                                    onChange={e => setBatchCount(parseInt(e.target.value) || 1)}
+                                    style={{ width: '100px' }}
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleGenerateVariants}
+                                    className="btn"
+                                    style={{ background: 'var(--primary)', color: 'white', border: 'none' }}
+                                >
+                                    Generate
+                                </button>
                             </div>
                         </div>
-                    ) : (
-                        <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                                <label className="text-md" style={{ opacity: 0.8 }}>Generate Variant Slots</label>
-                                <div style={{ display: 'flex', gap: '1rem' }}>
-                                    <input
-                                        className="input"
-                                        type="number"
-                                        min="1"
-                                        value={batchCount}
-                                        onChange={e => setBatchCount(parseInt(e.target.value) || 1)}
-                                        style={{ width: '100px' }}
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={handleGenerateVariants}
-                                        className="btn"
-                                        style={{ background: 'var(--primary)', color: 'white', border: 'none' }}
-                                    >
-                                        Generate
-                                    </button>
-                                </div>
-                            </div>
 
-                            {variants.length > 0 && (
-                                <div>
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                        <div>Name (Optional)</div>
-                                        <div>Price ($)</div>
-                                        <div>Quantity</div>
-                                        <div>Weight (kg)</div>
-                                        <div></div>
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        {variants.map((v, i) => (
-                                            <div key={i} style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr 1fr 1fr 40px', gap: '1rem', alignItems: 'center' }}>
-                                                <input
-                                                    className="input"
-                                                    value={v.name || ''}
-                                                    onChange={e => updateVariant(i, 'name', e.target.value)}
-                                                    placeholder={formData.name || "Item name"}
-                                                />
-                                                <input
-                                                    className="input"
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={v.price}
-                                                    onChange={e => updateVariant(i, 'price', e.target.value)}
-                                                    placeholder={formData.price || "Price"}
-                                                />
-                                                <input
-                                                    className="input"
-                                                    type="number"
-                                                    step="any"
-                                                    value={v.quantity}
-                                                    onChange={e => updateVariant(i, 'quantity', e.target.value)}
-                                                    required
-                                                    placeholder="Qty"
-                                                />
-                                                <input
-                                                    className="input"
-                                                    type="number"
-                                                    step="0.01"
-                                                    value={v.weight}
-                                                    onChange={e => updateVariant(i, 'weight', e.target.value)}
-                                                    placeholder="0.00 kg"
-                                                />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeVariant(i)}
-                                                    style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
-                                                >
-                                                    &times;
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={addVariant}
-                                        style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.875rem' }}
-                                    >
-                                        + Add one more
-                                    </button>
+                        {variants.length > 0 && (
+                            <div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <div>ID (Opt)</div>
+                                    <div>Name</div>
+                                    <div>Price ($)</div>
+                                    <div>Quantity</div>
+                                    <div>Weight (kg)</div>
+                                    <div></div>
                                 </div>
-                            )}
-                        </div>
-                    )}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    {variants.map((v, i) => (
+                                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', alignItems: 'center' }}>
+                                            <input
+                                                className="input"
+                                                value={v.id || ''}
+                                                onChange={e => updateVariant(i, 'id', e.target.value)}
+                                                placeholder="Auto"
+                                                style={{ fontFamily: 'monospace', fontSize: '0.8rem' }}
+                                            />
+                                            <input
+                                                className="input"
+                                                value={v.name || ''}
+                                                onChange={e => updateVariant(i, 'name', e.target.value)}
+                                                placeholder="Item name"
+                                                required
+                                            />
+                                            <input
+                                                className="input"
+                                                type="number"
+                                                step="0.01"
+                                                value={v.price}
+                                                onChange={e => updateVariant(i, 'price', e.target.value)}
+                                                placeholder={formData.price || "Price"}
+                                            />
+                                            <input
+                                                className="input"
+                                                type="number"
+                                                step="any"
+                                                value={v.quantity}
+                                                onChange={e => updateVariant(i, 'quantity', e.target.value)}
+                                                required
+                                                placeholder="Qty"
+                                            />
+                                            <input
+                                                className="input"
+                                                type="number"
+                                                step="0.01"
+                                                value={v.weight}
+                                                onChange={e => updateVariant(i, 'weight', e.target.value)}
+                                                placeholder="0.00 kg"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => removeVariant(i)}
+                                                style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.2rem' }}
+                                            >
+                                                &times;
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={addVariant}
+                                    style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.875rem' }}
+                                >
+                                    + Add one more
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     <div>
                         <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Description</label>
@@ -335,8 +264,8 @@ export default function AddItemPage() {
                     {error && <p style={{ color: 'var(--error)', textAlign: 'center' }}>{error}</p>}
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem' }}>
-                        <button disabled={isPending || (mode === 'batch' && variants.length === 0)} className="btn btn-primary" style={{ minWidth: '150px' }}>
-                            {isPending ? 'Saving...' : (mode === 'simple' ? 'Create Item' : `Create ${variants.length} Items`)}
+                        <button disabled={isPending || variants.length === 0} className="btn btn-primary" style={{ minWidth: '150px' }}>
+                            {isPending ? 'Saving...' : `Create ${variants.length} Items`}
                         </button>
                     </div>
 
