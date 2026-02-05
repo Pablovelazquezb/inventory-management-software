@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { deleteItem, splitItem } from './actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import ProductDetailsModal from './ProductDetailsModal'
 
 // Helper to group items
 const groupItems = (items: any[]) => {
@@ -32,6 +33,7 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
     // Edit weight state
     const [editingId, setEditingId] = useState<string | null>(null)
     const [editWeight, setEditWeight] = useState<string>('')
+    const [selectedItem, setSelectedItem] = useState<any | null>(null)
 
     // Sub-action states
     const [splittingId, setSplittingId] = useState<string | null>(null)
@@ -126,7 +128,7 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
                                                 color: totalQuantity < 10 ? 'var(--error)' : 'var(--success)',
                                                 fontWeight: 500
                                             }}>
-                                                {totalQuantity} units
+                                                {totalQuantity} {firstItem.unit_type === 'kg' ? 'kg' : 'units'}
                                             </span>
                                         </td>
                                         <td style={{ padding: '1rem' }}>${firstItem.price}</td>
@@ -154,11 +156,18 @@ export default function InventoryList({ initialItems }: { initialItems: any[] })
                                                         </thead>
                                                         <tbody>
                                                             {groupItems.map(item => (
-                                                                <tr key={item.id} style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                                                                <tr
+                                                                    key={item.id}
+                                                                    style={{ borderTop: '1px solid rgba(255,255,255,0.05)', cursor: 'pointer' }}
+                                                                    onClick={() => setSelectedItem(item)}
+                                                                    className="hover-bg"
+                                                                >
                                                                     <td style={{ padding: '0.5rem 0', fontFamily: 'monospace', opacity: 0.5 }}>...{item.id.slice(-4)}</td>
                                                                     <td style={{ padding: '0.5rem 0' }}>
                                                                         {/* Stock Display */}
-                                                                        <span style={{ fontWeight: 500 }}>{item.quantity}</span>
+                                                                        <span style={{ fontWeight: 500 }}>
+                                                                            {item.quantity} <span style={{ fontSize: '0.8em', opacity: 0.7 }}>{item.unit_type === 'kg' ? 'kg' : 'units'}</span>
+                                                                        </span>
                                                                     </td>
                                                                     <td style={{ padding: '0.5rem 0' }}>
                                                                         {editingId === item.id ? (

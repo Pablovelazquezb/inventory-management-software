@@ -68,7 +68,7 @@ export default async function Sidebar() {
                         </Link>
                     </li>
                     <li>
-                        <Link href="/inventory/restock" style={{
+                        <Link href="/inventory/purchases" style={{
                             display: 'flex',
                             alignItems: 'center',
                             padding: '0.75rem 1rem',
@@ -77,7 +77,7 @@ export default async function Sidebar() {
                             fontWeight: 500,
                             transition: 'all 0.2s'
                         }}>
-                            + Add Stock
+                            Purchases
                         </Link>
                     </li>
                     <li>

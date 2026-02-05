@@ -16,9 +16,10 @@ export async function createItem(prevState: any, formData: FormData) {
     const name = formData.get('name') as string
     const category = formData.get('category') as string
     const subcategoryId = formData.get('subcategory_id') as string || null
-    const quantity = parseInt(formData.get('quantity') as string)
+    const quantity = parseFloat(formData.get('quantity') as string)
     const price = parseFloat(formData.get('price') as string)
     const weight = formData.get('weight') ? parseFloat(formData.get('weight') as string) : null
+    const unitType = formData.get('unit_type') as string || 'unit'
     const description = formData.get('description') as string
 
     const { data: item, error: itemError } = await supabase.from('inventory_items').insert({
@@ -28,6 +29,7 @@ export async function createItem(prevState: any, formData: FormData) {
         quantity,
         price,
         weight,
+        unit_type: unitType,
         description,
         user_id: user.id
     }).select().single()
@@ -61,7 +63,7 @@ export async function deleteItem(id: string) {
     revalidatePath('/dashboard')
 }
 
-export async function sellItem(id: string, quantitySold: number, note?: string) {
+export async function sellItem(id: string, quantitySold: number, note?: string, invoice_url?: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -97,7 +99,8 @@ export async function sellItem(id: string, quantitySold: number, note?: string) 
         price_per_unit: item.price,
         total_price: item.price * quantitySold,
         user_id: user.id,
-        note
+        note,
+        invoice_url
     })
 
     if (saleError) console.error('Error recording sale:', saleError)
@@ -296,7 +299,7 @@ export async function updateItem(id: string, prevState: any, formData: FormData)
     const name = formData.get('name') as string
     const category = formData.get('category') as string
     const subcategoryId = formData.get('subcategory_id') as string || null
-    const quantity = parseInt(formData.get('quantity') as string)
+    const quantity = parseFloat(formData.get('quantity') as string)
     const price = parseFloat(formData.get('price') as string)
     const weight = formData.get('weight') ? parseFloat(formData.get('weight') as string) : null
     const description = formData.get('description') as string
@@ -334,4 +337,65 @@ export async function updateSubcategory(id: string, name: string) {
     if (error) throw new Error(error.message)
     revalidatePath('/inventory/categories')
     revalidatePath('/inventory/add')
+}
+
+export async function createBatchItems(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    // Common fields
+    const name = formData.get('name') as string
+    const category = formData.get('category') as string
+    const subcategoryId = formData.get('subcategory_id') as string || null
+    const price = parseFloat(formData.get('price') as string)
+    const unitType = formData.get('unit_type') as string || 'unit'
+    const description = formData.get('description') as string
+
+    // Parse variants
+    const variantsJson = formData.get('variants') as string
+    let variants: any[] = []
+    try {
+        variants = JSON.parse(variantsJson)
+    } catch (e) {
+        return { error: 'Invalid variants data' }
+    }
+
+    if (!variants || variants.length === 0) return { error: 'No variants provided' }
+
+    const itemsToInsert = variants.map(v => ({
+        name: v.name || name, // Use variant name if provided, else common name
+        category,
+        subcategory_id: subcategoryId,
+        quantity: parseFloat(v.quantity) || 1,
+        price,
+        weight: v.weight ? parseFloat(v.weight) : null,
+        unit_type: unitType,
+        description,
+        user_id: user.id
+    }))
+
+    const { data: insertedItems, error: insertError } = await supabase
+        .from('inventory_items')
+        .insert(itemsToInsert)
+        .select()
+
+    if (insertError) return { error: insertError.message }
+
+    // Log stock entries
+    const entries = insertedItems.map(item => ({
+        item_id: item.id,
+        quantity_added: item.quantity,
+        user_id: user.id,
+        note: 'Batch Creation'
+    }))
+
+    const { error: entryError } = await supabase.from('stock_entries').insert(entries)
+
+    if (entryError) console.error('Error creating stock entries for batch', entryError)
+
+    revalidatePath('/inventory')
+    revalidatePath('/dashboard')
+    redirect('/inventory')
 }

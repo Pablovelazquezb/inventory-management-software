@@ -16,6 +16,8 @@ export default function SellPage() {
     const [quantity, setQuantity] = useState('1')
     const [note, setNote] = useState('')
     const [searchTerm, setSearchTerm] = useState('')
+    const [invoiceUrl, setInvoiceUrl] = useState('')
+    const [uploading, setUploading] = useState(false)
 
     useEffect(() => {
         fetchData()
@@ -69,7 +71,10 @@ export default function SellPage() {
             return
         }
 
-        await sellItem(selectedItemId, qty, note)
+        await sellItem(selectedItemId, qty, note, invoiceUrl)
+
+        // Reset form
+        setInvoiceUrl('')
 
         // Reset form and refresh data
         setQuantity('1')
@@ -78,6 +83,30 @@ export default function SellPage() {
         // setSelectedItemId('') 
         await fetchData()
         setSubmitting(false)
+    }
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!e.target.files || e.target.files.length === 0) return
+
+        const file = e.target.files[0]
+        setUploading(true)
+
+        const supabase = createClient()
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random()}.${fileExt}`
+        const filePath = `sales/${fileName}` // sales subfolder
+
+        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file)
+
+        if (uploadError) {
+            alert('Error uploading: ' + uploadError.message)
+            setUploading(false)
+            return
+        }
+
+        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath)
+        setInvoiceUrl(publicUrl)
+        setUploading(false)
     }
 
     const selectedItem = items.find(i => i.id === selectedItemId)
@@ -186,6 +215,19 @@ export default function SellPage() {
                                 placeholder="e.g. Customer Name or Discount Reason"
                                 rows={3}
                             />
+                        </div>
+
+                        {/* Invoice Upload */}
+                        <div>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Invoice (Optional)</label>
+                            <input
+                                type="file"
+                                className="input"
+                                onChange={handleFileUpload}
+                                accept=".pdf,.xml,.jpg,.png"
+                            />
+                            {uploading && <span style={{ fontSize: '0.8em', color: 'var(--primary)' }}>Uploading...</span>}
+                            {invoiceUrl && <span style={{ fontSize: '0.8em', color: 'var(--success)' }}>✓ Attached</span>}
                         </div>
 
                         <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginTop: '0.5rem' }}>
