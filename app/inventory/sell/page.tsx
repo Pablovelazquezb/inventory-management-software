@@ -185,12 +185,12 @@ export default function SellPage() {
                         {(searchTerm || showSuggestions) && (
                             <div style={{ marginTop: '0.5rem', maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
                                 {filteredItems.length > 0 ? (
-                                    Object.entries(filteredItems.reduce((acc, item) => {
+                                    Object.entries(filteredItems.reduce((acc, item: any) => {
                                         const cat = item.category || 'Uncategorized'
                                         if (!acc[cat]) acc[cat] = []
                                         acc[cat].push(item)
                                         return acc
-                                    }, {} as Record<string, typeof items>)).sort().map(([category, categoryItems]) => (
+                                    }, {} as Record<string, any[]>)).sort().map(([category, categoryItems]) => (
                                         <div key={category}>
                                             <div style={{
                                                 padding: '0.5rem 0.75rem',
@@ -203,7 +203,7 @@ export default function SellPage() {
                                             }}>
                                                 {category}
                                             </div>
-                                            {categoryItems.map(item => (
+                                            {categoryItems.map((item: any) => (
                                                 <div
                                                     key={item.id}
                                                     onClick={() => addToCart(item)}
