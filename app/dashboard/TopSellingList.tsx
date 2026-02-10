@@ -20,43 +20,55 @@ export default function TopSellingList({ sales }: { sales: any[] }) {
 
     return (
         <div className="card" style={{ padding: '0', overflow: 'hidden', height: '100%', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', background: 'rgba(255,255,255,0.02)' }}>
-                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>Top 5 Best Sellers</h3>
+            <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--border)', background: 'linear-gradient(to right, rgba(255,255,255,0.02), transparent)' }}>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Top 5 Best Sellers</h3>
             </div>
             <div style={{ flex: 1, overflowY: 'auto' }}>
                 {sortedItems.map((item: any, index: number) => (
                     <div key={item.name} style={{
-                        padding: '1rem',
+                        padding: '1.25rem 2rem',
                         borderBottom: '1px solid var(--border)',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        justifyContent: 'space-between',
+                        transition: 'background 0.2s',
+                        cursor: 'default'
+                    }} className="hover:bg-[rgba(255,255,255,0.02)]">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
                             <div style={{
-                                width: '24px',
-                                height: '24px',
-                                borderRadius: '50%',
-                                background: index === 0 ? 'gold' : index === 1 ? 'silver' : index === 2 ? '#cd7f32' : 'var(--surface)',
-                                color: index < 3 ? '#000' : 'inherit',
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '10px',
+                                background: index === 0 ? 'linear-gradient(135deg, #fbbf24, #d97706)' :
+                                    index === 1 ? 'linear-gradient(135deg, #e2e8f0, #94a3b8)' :
+                                        index === 2 ? 'linear-gradient(135deg, #f97316, #c2410c)' :
+                                            'rgba(255,255,255,0.05)',
+                                color: index < 3 ? '#fff' : 'rgba(255,255,255,0.5)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '0.75rem',
-                                fontWeight: 700
+                                fontSize: '0.9rem',
+                                fontWeight: 700,
+                                boxShadow: index < 3 ? '0 4px 6px -1px rgba(0,0,0,0.1)' : 'none'
                             }}>
                                 {index + 1}
                             </div>
-                            <div style={{ fontSize: '0.9rem', fontWeight: 500 }}>{item.name}</div>
+                            <div>
+                                <div style={{ fontSize: '1rem', fontWeight: 600 }}>{item.name}</div>
+                                <div style={{ fontSize: '0.8rem', opacity: 0.5 }}>Rank #{index + 1}</div>
+                            </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                            <div style={{ fontWeight: 600 }}>{item.quantity}</div>
-                            <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>Sold</div>
+                            <div style={{ fontWeight: 700, fontSize: '1.1rem', color: '#f8fafc' }}>{item.quantity}</div>
+                            <div style={{ fontSize: '0.75rem', opacity: 0.5, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Units Sold</div>
                         </div>
                     </div>
                 ))}
                 {sortedItems.length === 0 && (
-                    <div style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>No sales data</div>
+                    <div style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>📉</div>
+                        No sales data yet
+                    </div>
                 )}
             </div>
         </div>

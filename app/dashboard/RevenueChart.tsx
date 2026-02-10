@@ -20,10 +20,10 @@ export default function RevenueChart({ sales }: { sales: any[] }) {
     // Fill in missing dates if needed, for now just showing active days
 
     return (
-        <div className="card" style={{ padding: '1.5rem', height: '400px', display: 'flex', flexDirection: 'column' }}>
-            <div style={{ marginBottom: '1.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Revenue Trends</h3>
-                <p style={{ margin: '0.5rem 0 0', fontSize: '0.875rem', opacity: 0.5 }}>Income over time</p>
+        <div className="card" style={{ padding: '2rem', height: '400px', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ marginBottom: '2rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: 600 }}>Revenue Trends</h3>
+                <p style={{ margin: '0.5rem 0 0', fontSize: '0.9rem', opacity: 0.5 }}>Income over time</p>
             </div>
 
             <div style={{ flex: 1, width: '100%', minHeight: 0 }}>
@@ -31,8 +31,8 @@ export default function RevenueChart({ sales }: { sales: any[] }) {
                     <AreaChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                         <defs>
                             <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                                <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} />
+                                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
                             </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
@@ -53,17 +53,18 @@ export default function RevenueChart({ sales }: { sales: any[] }) {
                             dx={-10}
                         />
                         <Tooltip
-                            contentStyle={{ background: '#18181b', border: '1px solid #333', borderRadius: '8px' }}
+                            contentStyle={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)' }}
                             itemStyle={{ color: '#fff' }}
                             formatter={(value: any) => [`$${Number(value || 0).toFixed(2)}`, 'Revenue']}
                         />
                         <Area
                             type="monotone"
                             dataKey="amount"
-                            stroke="var(--primary)"
+                            stroke="#8b5cf6"
                             strokeWidth={3}
                             fillOpacity={1}
                             fill="url(#colorAmount)"
+                            animationDuration={1500}
                         />
                     </AreaChart>
                 </ResponsiveContainer>

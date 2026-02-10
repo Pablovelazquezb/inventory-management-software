@@ -11,81 +11,68 @@ export default async function PurchasesPage() {
         .order('created_at', { ascending: false })
 
     return (
-        <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '4rem' }}>
+        <div className="container animate-slide-up" style={{ paddingBottom: '4rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <div>
-                    <Link href="/inventory" style={{ fontSize: '0.875rem', opacity: 0.5, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        ← Back
+                    <Link href="/inventory" className="btn" style={{ paddingLeft: 0, color: 'rgba(248,250,252,0.6)' }}>
+                        ← Back to Inventory
                     </Link>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, margin: '0.5rem 0 0' }}>Purchases</h2>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Purchases</h2>
                 </div>
                 <Link href="/inventory/purchases/new" className="btn btn-primary">
                     + New Purchase Order
                 </Link>
             </div>
 
-            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+            <div className="card" style={{ padding: 0 }}>
+                <table>
+                    <thead>
                         <tr>
-                            <th style={{ padding: '1rem', textAlign: 'left', opacity: 0.7 }}>Date</th>
-                            <th style={{ padding: '1rem', textAlign: 'left', opacity: 0.7 }}>Supplier</th>
-                            <th style={{ padding: '1rem', textAlign: 'center', opacity: 0.7 }}>Status</th>
-                            <th style={{ padding: '1rem', textAlign: 'center', opacity: 0.7 }}>Payment</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>Amount</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>Expected</th>
-                            <th style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>Actions</th>
+                            <th>Date</th>
+                            <th>Supplier</th>
+                            <th style={{ textAlign: 'center' }}>Status</th>
+                            <th style={{ textAlign: 'center' }}>Payment</th>
+                            <th style={{ textAlign: 'right' }}>Amount</th>
+                            <th style={{ textAlign: 'right' }}>Expected</th>
+                            <th style={{ textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {purchases?.map(p => (
-                            <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                <td style={{ padding: '1rem', opacity: 0.8 }}>
+                        {purchases?.map((p, i) => (
+                            <tr key={p.id} style={{ animation: `fadeIn 0.3s ease-out ${i * 0.05}s forwards`, opacity: 0 }}>
+                                <td style={{ opacity: 0.8 }}>
                                     {new Date(p.created_at).toLocaleDateString()}
                                 </td>
-                                <td style={{ padding: '1rem', fontWeight: 500 }}>
+                                <td style={{ fontWeight: 500, color: 'var(--foreground)' }}>
                                     {p.suppliers?.name || 'Unknown'}
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                    <span style={{
-                                        padding: '0.25rem 0.75rem',
-                                        borderRadius: '20px',
-                                        fontSize: '0.75rem',
-                                        fontWeight: 600,
-                                        background: p.status === 'ordered' ? 'rgba(255, 165, 0, 0.2)' :
-                                            p.status === 'received' ? 'rgba(34, 197, 94, 0.2)' :
-                                                'rgba(255,255,255,0.1)',
-                                        color: p.status === 'ordered' ? 'orange' :
-                                            p.status === 'received' ? '#22c55e' :
-                                                'inherit'
-                                    }}>
+                                <td style={{ textAlign: 'center' }}>
+                                    <span className={`badge ${p.status === 'ordered' ? 'badge-warning' :
+                                        p.status === 'received' ? 'badge-success' :
+                                            'badge-neutral'
+                                        }`}>
                                         {p.status.toUpperCase()}
                                     </span>
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                    <span style={{
-                                        fontSize: '0.75rem',
-                                        opacity: 0.8,
-                                        padding: '0.25rem 0.5rem',
-                                        border: '1px solid var(--border)',
-                                        borderRadius: '4px',
-                                        background: p.payment_status === 'paid' ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
-                                        color: p.payment_status === 'paid' ? '#22c55e' : 'inherit'
-                                    }}>
+                                <td style={{ textAlign: 'center' }}>
+                                    <span className={`badge ${p.payment_status === 'paid' ? 'badge-success' :
+                                        p.payment_status === 'partial' ? 'badge-warning' :
+                                            'badge-neutral'
+                                        }`}>
                                         {(p.payment_status || 'pending').toUpperCase()}
                                     </span>
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>
+                                <td style={{ textAlign: 'right', fontWeight: 600 }}>
                                     ${p.total_amount?.toLocaleString() ?? '0.00'}
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>
+                                <td style={{ textAlign: 'right', opacity: 0.7 }}>
                                     {p.expected_date ? new Date(p.expected_date).toLocaleDateString() : '-'}
                                 </td>
-                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                <td style={{ textAlign: 'right' }}>
                                     <Link
                                         href={`/inventory/purchases/${p.id}`}
                                         className="btn"
-                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: 'var(--surface)', border: '1px solid var(--border)' }}
+                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border)' }}
                                     >
                                         View
                                     </Link>
@@ -94,7 +81,8 @@ export default async function PurchasesPage() {
                         ))}
                         {(!purchases || purchases.length === 0) && (
                             <tr>
-                                <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
+                                <td colSpan={7} style={{ padding: '4rem', textAlign: 'center', opacity: 0.5 }}>
+                                    <div style={{ marginBottom: '1rem', fontSize: '2rem' }}>📦</div>
                                     No purchase orders found.
                                 </td>
                             </tr>

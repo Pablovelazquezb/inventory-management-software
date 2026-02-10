@@ -303,6 +303,7 @@ export async function updateItem(id: string, prevState: any, formData: FormData)
     const price = parseFloat(formData.get('price') as string)
     const weight = formData.get('weight') ? parseFloat(formData.get('weight') as string) : null
     const description = formData.get('description') as string
+    const image_url = formData.get('image_url') as string
 
     const { error } = await supabase.from('inventory_items').update({
         name,
@@ -311,7 +312,8 @@ export async function updateItem(id: string, prevState: any, formData: FormData)
         quantity,
         price,
         weight,
-        description
+        description,
+        image_url: image_url || null
     }).eq('id', id)
 
     if (error) {
@@ -382,6 +384,7 @@ export async function createBatchItems(prevState: any, formData: FormData) {
             weight: v.weight ? parseFloat(v.weight) : null,
             unit_type: unitType,
             description,
+            image_url: v.image_url || null, // Add image_url
             user_id: user.id
         }
     })

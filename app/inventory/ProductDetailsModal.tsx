@@ -108,41 +108,54 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                 </button>
 
                 {/* Header */}
-                <div style={{ marginBottom: '2rem', paddingRight: '2rem' }}>
-                    <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                        <span style={{
-                            background: 'var(--primary)',
-                            color: 'white',
-                            padding: '0.2rem 0.6rem',
-                            borderRadius: '12px',
-                            fontSize: '0.75rem',
-                            fontWeight: 600
-                        }}>
-                            {item.category || 'Uncategorized'}
-                        </span>
-                        {item.subcategories && (
+                <div style={{ marginBottom: '2rem', paddingRight: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
+                    {/* Image */}
+                    <div style={{ width: '120px', height: '120px', borderRadius: '16px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0, border: '1px solid var(--border)' }}>
+                        {item.image_url ? (
+                            <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2.5rem', opacity: 0.2 }}>
+                                📦
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                             <span style={{
-                                background: 'rgba(255,255,255,0.1)',
+                                background: 'var(--primary)',
+                                color: 'white',
                                 padding: '0.2rem 0.6rem',
                                 borderRadius: '12px',
-                                fontSize: '0.75rem'
+                                fontSize: '0.75rem',
+                                fontWeight: 600
                             }}>
-                                {item.subcategories.name}
+                                {item.category || 'Uncategorized'}
                             </span>
-                        )}
-                        <span style={{
-                            background: item.quantity <= 5 ? 'var(--error)' : 'var(--success)',
-                            padding: '0.2rem 0.6rem',
-                            borderRadius: '12px',
-                            fontSize: '0.75rem',
-                            color: 'white'
-                        }}>
-                            {item.quantity <= 5 ? 'Low Stock' : 'In Stock'}
-                        </span>
-                    </div>
-                    <h2 style={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.2 }}>{item.name}</h2>
-                    <div style={{ fontSize: '0.875rem', opacity: 0.5, marginTop: '0.25rem', fontFamily: 'monospace' }}>
-                        ID: {item.id}
+                            {item.subcategories && (
+                                <span style={{
+                                    background: 'rgba(255,255,255,0.1)',
+                                    padding: '0.2rem 0.6rem',
+                                    borderRadius: '12px',
+                                    fontSize: '0.75rem'
+                                }}>
+                                    {item.subcategories.name}
+                                </span>
+                            )}
+                            <span style={{
+                                background: item.quantity <= 5 ? 'var(--error)' : 'var(--success)',
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '12px',
+                                fontSize: '0.75rem',
+                                color: 'white'
+                            }}>
+                                {item.quantity <= 5 ? 'Low Stock' : 'In Stock'}
+                            </span>
+                        </div>
+                        <h2 style={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.2 }}>{item.name}</h2>
+                        <div style={{ fontSize: '0.875rem', opacity: 0.5, marginTop: '0.25rem', fontFamily: 'monospace' }}>
+                            ID: {item.id}
+                        </div>
                     </div>
                 </div>
 

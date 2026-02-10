@@ -34,27 +34,29 @@ export default async function DashboardPage() {
     const totalStockEntries = entriesCount || 0
 
     return (
-        <div style={{ maxWidth: '1400px', margin: '0 auto', paddingBottom: '4rem' }}>
+        <div className="container animate-slide-up" style={{ paddingBottom: '4rem' }}>
             <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
                 <div>
-                    <h2 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>Dashboard</h2>
-                    <p style={{ color: 'rgba(255,255,255,0.5)', margin: '0.5rem 0 0' }}>Overview of your inventory performance.</p>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Dashboard</h2>
+                    <p style={{ color: 'rgba(248,250,252,0.5)', margin: '0.5rem 0 0', fontSize: '1.1rem' }}>Overview of your inventory performance.</p>
                 </div>
-                <div style={{ textAlign: 'right', opacity: 0.5, fontSize: '0.875rem' }}>
+                <div style={{ textAlign: 'right', opacity: 0.5, fontSize: '0.875rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
                     Data: Real-time
                 </div>
             </div>
 
             {/* KPI Cards */}
-            <KPIGrid
-                totalRevenue={totalRevenue}
-                totalItemsSold={totalItemsSold}
-                totalSalesCount={totalSalesCount}
-                totalStockEntries={totalStockEntries}
-            />
+            <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
+                <KPIGrid
+                    totalRevenue={totalRevenue}
+                    totalItemsSold={totalItemsSold}
+                    totalSalesCount={totalSalesCount}
+                    totalStockEntries={totalStockEntries}
+                />
+            </div>
 
             {/* Main Content Grid: Chart (Left) + Top Items (Right) */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: '1.5rem', alignItems: 'stretch' }}>
+            <div className="animate-scale-in" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', alignItems: 'stretch', animationDelay: '0.2s' }}>
 
                 {/* Revenue Chart */}
                 <RevenueChart sales={safeSales} />

@@ -15,6 +15,11 @@ export default function EditItemForm({ item, categories, subcategories }: { item
     const [selectedCategory, setSelectedCategory] = useState(item.category) // existing name
     const [filteredSubcategories, setFilteredSubcategories] = useState<any[]>([])
 
+    // Image Upload State
+    const [uploading, setUploading] = useState(false)
+    const [imageUrl, setImageUrl] = useState(item.image_url || '')
+    const [error, setError] = useState('')
+
     useEffect(() => {
         if (selectedCategory) {
             // Match category name to object to get ID for filtering
@@ -29,9 +34,76 @@ export default function EditItemForm({ item, categories, subcategories }: { item
         }
     }, [selectedCategory, categories, subcategories])
 
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            setUploading(true)
+            setError('')
+            const file = e.target.files?.[0]
+            if (!file) return
+
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+            const filePath = `${fileName}`
+
+            // Need to import createClient here or use props? Best to use import.
+            // Client component uses browser client
+            const { createClient } = await import('@/utils/supabase/client')
+            const supabase = createClient()
+
+            const { error: uploadError } = await supabase.storage
+                .from('product-images')
+                .upload(filePath, file)
+
+            if (uploadError) {
+                throw uploadError
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(filePath)
+
+            setImageUrl(publicUrl)
+        } catch (error: any) {
+            console.error('Error uploading image:', error)
+            setError('Error uploading image: ' + error.message)
+        } finally {
+            setUploading(false)
+        }
+    }
+
     return (
         <div className="card">
             <form action={formAction} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                {/* Hidden input for image_url */}
+                <input type="hidden" name="image_url" value={imageUrl} />
+
+                {/* Header with Image Upload */}
+                <div style={{ display: 'flex', gap: '2rem', alignItems: 'start', marginBottom: '1rem' }}>
+                    <div style={{ width: '120px', height: '120px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.02)' }}>
+                        {uploading ? (
+                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>Uploading...</span>
+                        ) : imageUrl ? (
+                            <img src={imageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <span style={{ fontSize: '2rem', opacity: 0.2 }}>📷</span>
+                        )}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                        />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Item Image</label>
+                        <p style={{ fontSize: '0.85rem', opacity: 0.5, lineHeight: '1.4' }}>
+                            Click to change the product image.
+                        </p>
+                        {error && <p style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: '0.5rem' }}>{error}</p>}
+                    </div>
+                </div>
+
                 <div>
                     <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
                         Item Name
@@ -119,7 +191,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem' }}>
-                    <button disabled={isPending} className="btn btn-primary" style={{ minWidth: '150px' }}>
+                    <button disabled={isPending || uploading} className="btn btn-primary" style={{ minWidth: '150px' }}>
                         {isPending ? 'Updating...' : 'Update Item'}
                     </button>
                 </div>

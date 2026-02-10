@@ -28,43 +28,57 @@ export default function AddItemPage() {
         description: ''
     })
 
+    // Image Upload State
+    const [uploading, setUploading] = useState(false)
+    const [defaultImageUrl, setDefaultImageUrl] = useState('')
+
     // Batch Mode State (Always Active)
     const [batchCount, setBatchCount] = useState(1)
     const [variants, setVariants] = useState<any[]>([])
 
-    useEffect(() => {
-        async function fetchData() {
-            const supabase = createClient()
-            const { data: cats } = await supabase.from('categories').select('*').order('name', { ascending: true })
-            const { data: subs } = await supabase.from('subcategories').select('*').order('name', { ascending: true })
-            if (cats) setCategories(cats)
-            if (subs) setSubcategories(subs)
-        }
-        fetchData()
-    }, [])
+    // ... existing useEffects ...
 
-    useEffect(() => {
-        if (selectedCategory) {
-            const catObj = categories.find(c => c.name === selectedCategory)
-            if (catObj) {
-                setFilteredSubcategories(subcategories.filter(s => s.category_id === catObj.id))
-            } else {
-                setFilteredSubcategories([])
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        try {
+            setUploading(true)
+            const file = e.target.files?.[0]
+            if (!file) return
+
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+            const filePath = `${fileName}`
+
+            const supabase = createClient()
+            const { error: uploadError } = await supabase.storage
+                .from('product-images')
+                .upload(filePath, file)
+
+            if (uploadError) {
+                throw uploadError
             }
-            setFormData(prev => ({ ...prev, category: selectedCategory }))
-        } else {
-            setFilteredSubcategories([])
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('product-images')
+                .getPublicUrl(filePath)
+
+            setDefaultImageUrl(publicUrl)
+        } catch (error: any) {
+            console.error('Error uploading image:', error)
+            setError('Error uploading image: ' + error.message)
+        } finally {
+            setUploading(false)
         }
-    }, [selectedCategory, categories, subcategories])
+    }
 
     const handleGenerateVariants = () => {
         const count = Math.max(1, batchCount)
         const newVariants = Array(count).fill(null).map(() => ({
-            id: '', // Custom ID
-            name: '', // Individual name
-            price: '', // Individual price
+            id: '',
+            name: '',
+            price: '',
             weight: '',
-            quantity: '1'
+            quantity: '1',
+            image_url: defaultImageUrl // Use uploaded image
         }))
         setVariants(newVariants)
     }
@@ -80,7 +94,7 @@ export default function AddItemPage() {
     }
 
     const addVariant = () => {
-        setVariants([...variants, { id: '', name: '', price: '', weight: '', quantity: '1' }])
+        setVariants([...variants, { id: '', name: '', price: '', weight: '', quantity: '1', image_url: defaultImageUrl }])
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -96,9 +110,6 @@ export default function AddItemPage() {
         submitData.append('unit_type', formData.unit_type)
         submitData.append('description', formData.description)
 
-        // Validate IDs if provided (optional or required? User said "can edit id", implies optional or manual)
-        // We pass it to backend.
-
         submitData.append('variants', JSON.stringify(variants))
         const result = await createBatchItems(null, submitData)
         if (result?.error) setError(result.error)
@@ -108,8 +119,9 @@ export default function AddItemPage() {
 
     return (
         <div style={{ maxWidth: '900px', margin: '0 auto', paddingBottom: '4rem' }}>
+            {/* ... Header ... */}
             <div style={{ marginBottom: '2rem' }}>
-                <Link href="/inventory" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Link href="/inventory" className="btn" style={{ paddingLeft: 0, color: 'rgba(248,250,252,0.6)' }}>
                     ← Back to Inventory
                 </Link>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -120,8 +132,37 @@ export default function AddItemPage() {
             <div className="card">
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
+                    {/* Image Upload Section */}
+                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'start' }}>
+                        <div style={{ width: '150px', height: '150px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.02)' }}>
+                            {uploading ? (
+                                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>Uploading...</span>
+                            ) : defaultImageUrl ? (
+                                <img src={defaultImageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                                <span style={{ fontSize: '2rem', opacity: 0.2 }}>📷</span>
+                            )}
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                            />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Product Image</label>
+                            <p style={{ fontSize: '0.85rem', opacity: 0.5, lineHeight: '1.4' }}>
+                                Click the box to upload an image from your computer.
+                                <br />This image will be applied to all generated variants.
+                            </p>
+                        </div>
+                    </div>
+
+                    <hr style={{ borderColor: 'var(--border)', opacity: 0.3 }} />
+
                     {/* Common Fields Row 1 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                        {/* ... Category ... */}
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
                                 <label className="text-md" style={{ display: 'block', opacity: 0.8 }}>Category</label>
@@ -175,8 +216,7 @@ export default function AddItemPage() {
                                 <button
                                     type="button"
                                     onClick={handleGenerateVariants}
-                                    className="btn"
-                                    style={{ background: 'var(--primary)', color: 'white', border: 'none' }}
+                                    className="btn btn-primary"
                                 >
                                     Generate
                                 </button>
