@@ -203,7 +203,7 @@ export default function SellPage() {
                                             }}>
                                                 {category}
                                             </div>
-                                            {categoryItems.map((item: any) => (
+                                            {(categoryItems as any[]).map((item: any) => (
                                                 <div
                                                     key={item.id}
                                                     onClick={() => addToCart(item)}
