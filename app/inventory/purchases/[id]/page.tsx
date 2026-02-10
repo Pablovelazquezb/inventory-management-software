@@ -1,152 +1,211 @@
 'use client'
 
+import { useState, useEffect, use } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import Link from 'next/link'
-import { useEffect, useState, use } from 'react'
-import { completePurchase, deletePurchase } from '../actions'
+import { receivePurchaseItems } from '../../actions'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function PurchaseDetailsPage({ params }: { params: Promise<{ id: string }> }) {
-    const router = useRouter()
     const { id } = use(params)
     const [purchase, setPurchase] = useState<any>(null)
     const [items, setItems] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [actionLoading, setActionLoading] = useState(false)
+    const router = useRouter()
 
     useEffect(() => {
-        if (!id) return
-        async function fetchData() {
+        const fetchPurchase = async () => {
             const supabase = createClient()
-            // Fetch Purchase
-            const { data: p } = await supabase.from('purchases').select('*').eq('id', id).single()
-            if (p) {
-                setPurchase(p)
-                // Fetch Items
-                const { data: i } = await supabase.from('purchase_items').select('*, inventory_items(name)').eq('purchase_id', id)
-                if (i) setItems(i)
+            // Fetch purchase details
+            const { data: pData, error: pError } = await supabase
+                .from('purchases')
+                .select('*, suppliers(name)')
+                .eq('id', id)
+                .single()
+
+            if (pError) {
+                console.error(pError)
+                return
             }
+            setPurchase(pData)
+
+            // Fetch Items
+            const { data: iData, error: iError } = await supabase
+                .from('purchase_items')
+                .select('*, inventory_items(name)')
+                .eq('purchase_id', id)
+
+            if (iData) setItems(iData)
             setLoading(false)
         }
-        fetchData()
+        fetchPurchase()
     }, [id])
 
-    const handleComplete = async () => {
-        if (!confirm('This will update your inventory stock. Are you sure you received these items?')) return
-        setActionLoading(true)
-        const res = await completePurchase(id)
-        if (res?.error) {
-            alert(res.error)
-            setActionLoading(false)
+    const handleReceive = async () => {
+        if (!confirm('Confirm receipt of all items? Inventory will be updated.')) return
+
+        // Prepare items for reception (assuming full receipt for now, could be partial)
+        const receivedItems = items.map(item => ({
+            id: item.id,
+            itemId: item.item_id,
+            quantityReceived: item.quantity_ordered // Defaulting to unordered quantity
+        }))
+
+        const result = await receivePurchaseItems(id, receivedItems)
+
+        if (result?.error) {
+            alert(result.error)
         } else {
-            // Action handles revalidate, but we can also refresh local
+            alert('Items received and inventory updated!')
+            router.refresh()
+            // reload page data
             window.location.reload()
         }
     }
 
-    const handleDelete = async () => {
-        if (!confirm('Are you sure? This cannot be undone.')) return
-        setActionLoading(true)
-        await deletePurchase(id)
-        router.push('/inventory/purchases')
+    const handlePaymentStatusChange = async (newStatus: string) => {
+        const supabase = createClient()
+        const { error } = await supabase
+            .from('purchases')
+            .update({ payment_status: newStatus })
+            .eq('id', id)
+
+        if (error) {
+            alert('Error updating payment status')
+        } else {
+            setPurchase({ ...purchase, payment_status: newStatus })
+            router.refresh()
+        }
     }
 
-    if (loading) return <div style={{ padding: '2rem', textAlign: 'center' }}>Loading...</div>
-    if (!purchase) return <div style={{ padding: '2rem', textAlign: 'center' }}>Purchase not found</div>
+    if (loading) return <div>Loading...</div>
+    if (!purchase) return <div>Purchase not found</div>
+
+    const subtotal = items.reduce((sum, item) => sum + (item.quantity_ordered * item.cost_per_unit), 0)
+    const taxRate = purchase.tax_rate || 0
+    const taxAmount = subtotal * taxRate
+    const totalAmount = subtotal + taxAmount
 
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', paddingBottom: '4rem' }}>
             <div style={{ marginBottom: '2rem' }}>
-                <Link href="/inventory/purchases" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <Link href="/inventory/purchases" style={{ fontSize: '0.875rem', opacity: 0.5, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     ← Back to Purchases
                 </Link>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginTop: '1rem' }}>
                     <div>
-                        <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Order <span style={{ opacity: 0.5 }}>{purchase.id.slice(0, 8)}</span></h2>
-                        <p style={{ opacity: 0.7 }}>{purchase.supplier_name}</p>
+                        <h1 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>Order #{purchase.id.slice(0, 8)}</h1>
+                        <div style={{ marginTop: '0.5rem', opacity: 0.7 }}>
+                            {purchase.suppliers?.name} • {new Date(purchase.created_at).toLocaleDateString()}
+                        </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
-                        <span style={{
-                            padding: '0.4rem 0.8rem',
-                            borderRadius: '20px',
-                            background: purchase.status === 'completed' ? 'var(--success)' : 'orange',
-                            color: 'white',
-                            fontSize: '0.875rem',
-                            fontWeight: 600,
-                            display: 'inline-block'
-                        }}>
-                            {purchase.status.toUpperCase()}
-                        </span>
-                        <span style={{ fontSize: '0.8rem', opacity: 0.5 }}>{new Date(purchase.created_at).toLocaleDateString()}</span>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                        {/* Payment Status Dropdown */}
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.75rem', opacity: 0.5, marginBottom: '0.25rem' }}>PAYMENT</div>
+                            <select
+                                value={purchase.payment_status || 'pending'}
+                                onChange={(e) => handlePaymentStatusChange(e.target.value)}
+                                style={{
+                                    padding: '0.5rem',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--border)',
+                                    background: 'var(--surface)',
+                                    color: 'white',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <option value="pending">Pending</option>
+                                <option value="partial">Partial</option>
+                                <option value="paid">Paid</option>
+                            </select>
+                        </div>
+
+                        {/* Order Status Badge */}
+                        <div style={{ textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.75rem', opacity: 0.5, marginBottom: '0.25rem' }}>STATUS</div>
+                            <span style={{
+                                display: 'inline-block',
+                                padding: '0.5rem 1rem',
+                                borderRadius: '20px',
+                                fontWeight: 600,
+                                background: purchase.status === 'ordered' ? 'rgba(255, 165, 0, 0.2)' :
+                                    purchase.status === 'received' ? 'rgba(34, 197, 94, 0.2)' :
+                                        'rgba(255,255,255,0.1)',
+                                color: purchase.status === 'ordered' ? 'orange' :
+                                    purchase.status === 'received' ? '#22c55e' :
+                                        'inherit'
+                            }}>
+                                {purchase.status.toUpperCase()}
+                            </span>
+                        </div>
                     </div>
                 </div>
+
+                {purchase.notes && (
+                    <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1rem', borderRadius: '8px', marginTop: '1.5rem', fontSize: '0.9rem', opacity: 0.8 }}>
+                        <strong>Notes:</strong> {purchase.notes}
+                    </div>
+                )}
             </div>
 
-            <div className="card" style={{ marginBottom: '2rem' }}>
-                <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', fontWeight: 600 }}>Items</h3>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.9rem' }}>
-                    <thead style={{ borderBottom: '1px solid var(--border)' }}>
-                        <tr>
-                            <th style={{ padding: '0.75rem', opacity: 0.6 }}>Item</th>
-                            <th style={{ padding: '0.75rem', opacity: 0.6 }}>Qty</th>
-                            <th style={{ padding: '0.75rem', opacity: 0.6 }}>Cost</th>
-                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Total</th>
+            <div className="card" style={{ padding: '2rem' }}>
+                <h3 style={{ marginTop: 0, marginBottom: '1.5rem', borderBottom: '1px solid var(--border)', paddingBottom: '1rem' }}>Items</h3>
+
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
+                    <thead>
+                        <tr style={{ textAlign: 'left', opacity: 0.6, fontSize: '0.875rem' }}>
+                            <th style={{ padding: '0.5rem' }}>Item</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Ordered</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Received</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Cost</th>
+                            <th style={{ padding: '0.5rem', textAlign: 'right' }}>Total</th>
                         </tr>
                     </thead>
                     <tbody>
                         {items.map(item => (
-                            <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                <td style={{ padding: '0.75rem' }}>
-                                    {item.inventory_items?.name || 'Unknown Item'}
-                                    {item.inventory_items?.name && <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{item.item_id.slice(-4)}</div>}
+                            <tr key={item.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                <td style={{ padding: '1rem 0.5rem' }}>{item.inventory_items?.name}</td>
+                                <td style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>{item.quantity_ordered}</td>
+                                <td style={{ padding: '1rem 0.5rem', textAlign: 'right', color: item.quantity_received > 0 ? 'var(--success)' : 'inherit' }}>
+                                    {item.quantity_received}
                                 </td>
-                                <td style={{ padding: '0.75rem' }}>
-                                    {item.quantity} {item.unit_type === 'kg' ? 'kg' : 'units'}
+                                <td style={{ padding: '1rem 0.5rem', textAlign: 'right' }}>${item.cost_per_unit}</td>
+                                <td style={{ padding: '1rem 0.5rem', textAlign: 'right', fontWeight: 600 }}>
+                                    ${(item.quantity_ordered * item.cost_per_unit).toFixed(2)}
                                 </td>
-                                <td style={{ padding: '0.75rem' }}>${item.price_per_unit}</td>
-                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>${(item.quantity * item.price_per_unit).toFixed(2)}</td>
                             </tr>
                         ))}
-                        {/* Grand Total Row */}
-                        <tr style={{ borderTop: '2px solid var(--border)' }}>
-                            <td colSpan={3} style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>Total</td>
-                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, fontSize: '1.1rem' }}>
-                                ${items.reduce((sum, i) => sum + (i.quantity * i.price_per_unit), 0).toFixed(2)}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colSpan={4} style={{ padding: '0.5rem 0.5rem', textAlign: 'right', opacity: 0.7 }}>Subtotal:</td>
+                            <td style={{ padding: '0.5rem 0.5rem', textAlign: 'right' }}>${subtotal.toFixed(2)}</td>
+                        </tr>
+                        {taxRate > 0 && (
+                            <tr>
+                                <td colSpan={4} style={{ padding: '0.5rem 0.5rem', textAlign: 'right', opacity: 0.7 }}>IVA ({(taxRate * 100).toFixed(0)}%):</td>
+                                <td style={{ padding: '0.5rem 0.5rem', textAlign: 'right' }}>${taxAmount.toFixed(2)}</td>
+                            </tr>
+                        )}
+                        <tr>
+                            <td colSpan={4} style={{ padding: '1.5rem 0.5rem', textAlign: 'right', fontWeight: 600 }}>Total Order Amount:</td>
+                            <td style={{ padding: '1.5rem 0.5rem', textAlign: 'right', fontWeight: 700, fontSize: '1.25rem', color: 'var(--primary)' }}>
+                                ${totalAmount.toLocaleString()}
                             </td>
                         </tr>
-                    </tbody>
+                    </tfoot>
                 </table>
-            </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
-                <div className="card">
-                    <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', fontWeight: 600, opacity: 0.8 }}>Note</h3>
-                    <p style={{ fontSize: '0.9rem', opacity: 0.7, whiteSpace: 'pre-wrap' }}>{purchase.note || 'No notes'}</p>
-                </div>
-                <div className="card">
-                    <h3 style={{ fontSize: '1rem', marginBottom: '0.5rem', fontWeight: 600, opacity: 0.8 }}>Attachments</h3>
-                    {purchase.invoice_url ? (
-                        <a href={purchase.invoice_url} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)', textDecoration: 'underline' }}>
-                            📄 View Invoice/PO
-                        </a>
-                    ) : (
-                        <p style={{ fontSize: '0.9rem', opacity: 0.5 }}>No attachments</p>
-                    )}
-                </div>
-            </div>
-
-            {/* Actions */}
-            <div style={{ marginTop: '3rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {purchase.status === 'pending' ? (
-                    <button onClick={handleDelete} disabled={actionLoading} className="btn" style={{ color: 'var(--error)', background: 'transparent', border: '1px solid var(--border)' }}>
-                        Delete Order
-                    </button>
-                ) : <div />}
-
-                {purchase.status === 'pending' && (
-                    <button onClick={handleComplete} disabled={actionLoading} className="btn btn-primary" style={{ padding: '1rem 2rem', fontSize: '1rem' }}>
-                        {actionLoading ? 'Processing...' : 'Complete Order & Update Stock'}
-                    </button>
+                {purchase.status === 'ordered' && (
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                        <button
+                            className="btn btn-primary"
+                            onClick={handleReceive}
+                        >
+                            Confirm Receipt & Update Inventory
+                        </button>
+                    </div>
                 )}
             </div>
         </div>

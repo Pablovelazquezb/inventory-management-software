@@ -1,185 +1,294 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { createClient } from '@/utils/supabase/client'
-import { createPurchase } from '../actions' // Corrected import
-
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
+import { createPurchase } from '../../actions'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 export default function NewPurchasePage() {
     const router = useRouter()
-    const [items, setItems] = useState<any[]>([]) // Inventory items for selection
+    const [suppliers, setSuppliers] = useState<any[]>([])
+    const [inventoryItems, setInventoryItems] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
-    const [uploading, setUploading] = useState(false)
 
     // Form State
-    const [supplierName, setSupplierName] = useState('')
-    const [note, setNote] = useState('')
-    const [invoiceUrl, setInvoiceUrl] = useState('')
-    const [lines, setLines] = useState<any[]>([
-        { item_id: '', quantity: '', price_per_unit: '', unit_type: 'unit' } // Default one line
-    ])
+    const [supplierId, setSupplierId] = useState('')
+    const [expectedDate, setExpectedDate] = useState('')
+    const [taxEnabled, setTaxEnabled] = useState(false)
+    const [paymentStatus, setPaymentStatus] = useState('pending')
+    const [notes, setNotes] = useState('')
+
+    const [cart, setCart] = useState<{ itemId: string; name: string; quantity: number; cost: number }[]>([])
+    const [submitting, setSubmitting] = useState(false)
+
+    // Item Selection State
+    const [selectedItem, setSelectedItem] = useState('')
+    const [quantity, setQuantity] = useState(1)
+    const [cost, setCost] = useState(0)
 
     useEffect(() => {
-        async function fetchItems() {
+        const loadData = async () => {
             const supabase = createClient()
-            const { data } = await supabase.from('inventory_items').select('id, name, unit_type, price')
-            if (data) setItems(data)
+            const [supRes, itemRes] = await Promise.all([
+                supabase.from('suppliers').select('*').order('name'),
+                supabase.from('inventory_items').select('id, name, price').order('name')
+            ])
+
+            if (supRes.data) setSuppliers(supRes.data)
+            if (itemRes.data) setInventoryItems(itemRes.data)
             setLoading(false)
         }
-        fetchItems()
+        loadData()
     }, [])
 
-    const handleLineChange = (index: number, field: string, value: any) => {
-        const newLines = [...lines]
-        newLines[index][field] = value
+    const addItemToOrder = () => {
+        if (!selectedItem) return
+        const item = inventoryItems.find(i => i.id === selectedItem)
+        if (!item) return
 
-        // Auto-set unit type/price if item changes
-        if (field === 'item_id') {
-            const item = items.find(i => i.id === value)
-            if (item) {
-                newLines[index].unit_type = item.unit_type || 'unit'
-                newLines[index].price_per_unit = item.price || ''
-            }
-        }
-        setLines(newLines)
+        setCart([...cart, {
+            itemId: item.id,
+            name: item.name,
+            quantity: Number(quantity),
+            cost: Number(cost)
+        }])
+
+        // Reset inputs
+        setSelectedItem('')
+        setQuantity(1)
+        setCost(0)
     }
 
-    const addLine = () => {
-        setLines([...lines, { item_id: '', quantity: '', price_per_unit: '', unit_type: 'unit' }])
+    const removeFromCart = (index: number) => {
+        const newCart = [...cart]
+        newCart.splice(index, 1)
+        setCart(newCart)
     }
 
-    const removeLine = (index: number) => {
-        setLines(lines.filter((_, i) => i !== index))
-    }
+    const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.cost), 0)
+    const taxRate = taxEnabled ? 0.16 : 0
+    const taxAmount = subtotal * taxRate
+    const totalAmount = subtotal + taxAmount
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0) return
+    const handleSubmit = async () => {
+        if (!supplierId) return alert('Please select a supplier')
+        if (cart.length === 0) return alert('Please add items to the order')
 
-        const file = e.target.files[0]
-        setUploading(true)
-
-        const supabase = createClient()
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Math.random()}.${fileExt}`
-        const filePath = `${fileName}`
-
-        const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file)
-
-        if (uploadError) {
-            alert('Error uploading: ' + uploadError.message)
-            setUploading(false)
-            return
-        }
-
-        const { data: { publicUrl } } = supabase.storage.from('documents').getPublicUrl(filePath)
-        setInvoiceUrl(publicUrl)
-        setUploading(false)
-    }
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        const formData = new FormData()
-        formData.append('supplier_name', supplierName)
-        formData.append('note', note)
-        formData.append('invoice_url', invoiceUrl)
-
-        // Filter out empty lines
-        const validLines = lines.filter(l => l.item_id && l.quantity)
-        formData.append('items', JSON.stringify(validLines))
-
-        // Call server action dynamically imported or we can just fetch
-        // For now, let's use the standard fetch or import.
-        // Importing server action in client component.
-        // We need to import it at top.
-        // Let's assume createPurchase is available.
-
-        const { createPurchase } = await import('../actions')
-        const result = await createPurchase(null, formData)
+        setSubmitting(true)
+        const result = await createPurchase(
+            supplierId,
+            cart,
+            totalAmount,
+            expectedDate,
+            undefined, // documentUrl
+            taxRate,
+            paymentStatus,
+            notes
+        )
+        setSubmitting(false)
 
         if (result?.error) {
             alert(result.error)
+        } else {
+            // Redirect to purchase details or list
+            router.push('/inventory/purchases')
         }
     }
 
+    if (loading) return <div>Loading...</div>
+
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+        <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem' }}>
             <div style={{ marginBottom: '2rem' }}>
-                <Link href="/inventory/purchases" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                    ← Back to Purchases
+                <Link href="/inventory" style={{ fontSize: '0.875rem', opacity: 0.5, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    ← Back
                 </Link>
-                <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>New Purchase Order</h2>
+                <h1 style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem' }}>New Purchase Order</h1>
             </div>
 
-            <div className="card">
-                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-
-                    {/* Header Info */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                        <div>
-                            <label className="label">Supplier Name</label>
-                            <input className="input" value={supplierName} onChange={e => setSupplierName(e.target.value)} required placeholder="e.g. Vendor Corp" />
-                        </div>
-                        <div>
-                            <label className="label">Invoice / PO (PDF/XML)</label>
-                            <input type="file" className="input" onChange={handleFileUpload} accept=".pdf,.xml,.jpg,.png" />
-                            {uploading && <span style={{ fontSize: '0.8em', color: 'var(--primary)' }}>Uploading...</span>}
-                            {invoiceUrl && <span style={{ fontSize: '0.8em', color: 'var(--success)' }}>✓ Attached</span>}
-                        </div>
-                    </div>
-
+            <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                     <div>
-                        <label className="label">Note</label>
-                        <textarea className="input" value={note} onChange={e => setNote(e.target.value)} rows={2} placeholder="Optional notes..." />
-                    </div>
-
-                    <hr style={{ borderColor: 'var(--border)', opacity: 0.5 }} />
-
-                    {/* Items */}
-                    <div>
-                        <label className="label" style={{ marginBottom: '1rem', display: 'block' }}>Items</label>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                            {lines.map((line, index) => (
-                                <div key={index} style={{ display: 'grid', gridTemplateColumns: '3fr 1fr 1fr 1fr 40px', gap: '1rem', alignItems: 'end' }}>
-                                    <div>
-                                        <label style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '4px', display: index === 0 ? 'block' : 'none' }}>Item</label>
-                                        <select className="input" value={line.item_id} onChange={e => handleLineChange(index, 'item_id', e.target.value)} required>
-                                            <option value="">Select Item...</option>
-                                            {items.map(i => (
-                                                <option key={i.id} value={i.id}>{i.name}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '4px', display: index === 0 ? 'block' : 'none' }}>Qty</label>
-                                        <input type="number" step="any" className="input" value={line.quantity} onChange={e => handleLineChange(index, 'quantity', e.target.value)} required />
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '4px', display: index === 0 ? 'block' : 'none' }}>Unit</label>
-                                        <select className="input" value={line.unit_type} onChange={e => handleLineChange(index, 'unit_type', e.target.value)}>
-                                            <option value="unit">Units</option>
-                                            <option value="kg">Kg</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '4px', display: index === 0 ? 'block' : 'none' }}>Cost ($)</label>
-                                        <input type="number" step="0.01" className="input" value={line.price_per_unit} onChange={e => handleLineChange(index, 'price_per_unit', e.target.value)} required placeholder="Unit Cost" />
-                                    </div>
-                                    <button type="button" onClick={() => removeLine(index)} style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', paddingBottom: '0.5rem' }}>✕</button>
-                                </div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Supplier</label>
+                        <select
+                            className="input"
+                            value={supplierId}
+                            onChange={(e) => setSupplierId(e.target.value)}
+                        >
+                            <option value="">Select Supplier...</option>
+                            {suppliers.map(s => (
+                                <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
+                        </select>
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>
+                            <Link href="/inventory/suppliers" style={{ color: 'var(--primary)' }}>+ Manage Suppliers</Link>
                         </div>
-                        <button type="button" onClick={addLine} style={{ marginTop: '1rem', color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.875rem' }}>+ Add details</button>
                     </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                        <Link href="/inventory/purchases" className="btn" style={{ background: 'transparent', border: '1px solid var(--border)' }}>Cancel</Link>
-                        <button type="submit" className="btn btn-primary" disabled={uploading}>Create Order</button>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Expected Date</label>
+                        <input
+                            type="date"
+                            className="input"
+                            value={expectedDate}
+                            onChange={(e) => setExpectedDate(e.target.value)}
+                        />
                     </div>
+                </div>
 
-                </form>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>IVA (16%)</label>
+                        <div style={{ display: 'flex', alignItems: 'center', height: '42px' }}>
+                            <input
+                                type="checkbox"
+                                checked={taxEnabled}
+                                onChange={(e) => setTaxEnabled(e.target.checked)}
+                                style={{ width: '20px', height: '20px' }}
+                            />
+                            <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>Apply Tax</span>
+                        </div>
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Payment Status</label>
+                        <select
+                            className="input"
+                            value={paymentStatus}
+                            onChange={(e) => setPaymentStatus(e.target.value)}
+                        >
+                            <option value="pending">Pending</option>
+                            <option value="partial">Partial</option>
+                            <option value="paid">Paid</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Notes</label>
+                        <textarea
+                            className="input"
+                            rows={1}
+                            placeholder="Optional notes..."
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                        />
+                    </div>
+                </div>
+
+                {/* Add Item Form */}
+                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+                    <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>Add Items</h3>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
+                        <div style={{ flex: 2 }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>Product</label>
+                            <select
+                                className="input"
+                                value={selectedItem}
+                                onChange={(e) => setSelectedItem(e.target.value)}
+                            >
+                                <option value="">Select Product...</option>
+                                {inventoryItems.map(i => (
+                                    <option key={i.id} value={i.id}>{i.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>Quantity</label>
+                            <input
+                                type="number"
+                                className="input"
+                                min="1"
+                                value={quantity}
+                                onChange={(e) => setQuantity(Number(e.target.value))}
+                            />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>Cost/Unit</label>
+                            <input
+                                type="number"
+                                className="input"
+                                min="0"
+                                step="0.01"
+                                value={cost}
+                                onChange={(e) => setCost(Number(e.target.value))}
+                            />
+                        </div>
+                        <button
+                            className="btn btn-primary"
+                            onClick={addItemToOrder}
+                            disabled={!selectedItem}
+                        >
+                            Add
+                        </button>
+                    </div>
+                </div>
+
+                {/* Cart Table */}
+                <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
+                    <thead>
+                        <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
+                            <th style={{ padding: '0.75rem', opacity: 0.6 }}>Product</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Qty</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Cost</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Total</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6 }}></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {cart.map((item, index) => (
+                            <tr key={index} style={{ borderBottom: '1px solid var(--border)' }}>
+                                <td style={{ padding: '0.75rem' }}>{item.name}</td>
+                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>{item.quantity}</td>
+                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>${item.cost.toFixed(2)}</td>
+                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>${(item.quantity * item.cost).toFixed(2)}</td>
+                                <td style={{ padding: '0.75rem', textAlign: 'right' }}>
+                                    <button
+                                        onClick={() => removeFromCart(index)}
+                                        style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer' }}
+                                    >
+                                        ×
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                        {cart.length === 0 && (
+                            <tr>
+                                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Order items will appear here</td>
+                            </tr>
+                        )}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>Subtotal:</td>
+                            <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${subtotal.toFixed(2)}</td>
+                            <td></td>
+                        </tr>
+                        {taxEnabled && (
+                            <tr>
+                                <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>IVA (16%):</td>
+                                <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${taxAmount.toFixed(2)}</td>
+                                <td></td>
+                            </tr>
+                        )}
+                        <tr>
+                            <td colSpan={3} style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>Total:</td>
+                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, fontSize: '1.2rem', color: 'var(--primary)' }}>
+                                ${totalAmount.toFixed(2)}
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <button
+                        className="btn btn-primary"
+                        style={{ padding: '1rem 3rem', fontSize: '1.1rem' }}
+                        onClick={handleSubmit}
+                        disabled={submitting || cart.length === 0}
+                    >
+                        {submitting ? 'Creating Order...' : 'Create Purchase Order'}
+                    </button>
+                </div>
+
             </div>
         </div>
     )

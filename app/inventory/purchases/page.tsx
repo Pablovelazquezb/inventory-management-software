@@ -1,106 +1,107 @@
-'use client'
-
-import { createClient } from '@/utils/supabase/client'
+import { createClient } from '@/utils/supabase/server'
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
 
-export default function PurchasesPage() {
-    const [purchases, setPurchases] = useState<any[]>([])
-    const [loading, setLoading] = useState(true)
-    const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending')
+export default async function PurchasesPage() {
+    const supabase = await createClient()
 
-    useEffect(() => {
-        async function fetchPurchases() {
-            const supabase = createClient()
-            const { data, error } = await supabase
-                .from('purchases')
-                .select('*')
-                .order('created_at', { ascending: false })
-
-            if (data) setPurchases(data)
-            setLoading(false)
-        }
-        fetchPurchases()
-    }, [])
-
-    const filteredPurchases = purchases.filter(p => p.status === activeTab)
+    // Fetch purchases with suppliers
+    const { data: purchases, error } = await supabase
+        .from('purchases')
+        .select('*, suppliers(name)')
+        .order('created_at', { ascending: false })
 
     return (
-        <div style={{ padding: '0 1rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', paddingBottom: '4rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 700 }}>Purchases</h1>
+                <div>
+                    <Link href="/inventory" style={{ fontSize: '0.875rem', opacity: 0.5, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        ← Back
+                    </Link>
+                    <h2 style={{ fontSize: '2rem', fontWeight: 700, margin: '0.5rem 0 0' }}>Purchases</h2>
+                </div>
                 <Link href="/inventory/purchases/new" className="btn btn-primary">
-                    + New Purchase
+                    + New Purchase Order
                 </Link>
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid var(--border)' }}>
-                <button
-                    onClick={() => setActiveTab('pending')}
-                    style={{
-                        padding: '0.75rem 0',
-                        background: 'none',
-                        border: 'none',
-                        borderBottom: activeTab === 'pending' ? '2px solid var(--primary)' : '2px solid transparent',
-                        color: activeTab === 'pending' ? 'var(--foreground)' : 'rgba(255,255,255,0.5)',
-                        cursor: 'pointer',
-                        fontWeight: 500
-                    }}
-                >
-                    In Process ({purchases.filter(p => p.status === 'pending').length})
-                </button>
-                <button
-                    onClick={() => setActiveTab('completed')}
-                    style={{
-                        padding: '0.75rem 0',
-                        background: 'none',
-                        border: 'none',
-                        borderBottom: activeTab === 'completed' ? '2px solid var(--primary)' : '2px solid transparent',
-                        color: activeTab === 'completed' ? 'var(--foreground)' : 'rgba(255,255,255,0.5)',
-                        cursor: 'pointer',
-                        fontWeight: 500
-                    }}
-                >
-                    History
-                </button>
-            </div>
-
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '2rem', opacity: 0.5 }}>Loading...</div>
-            ) : filteredPurchases.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '3rem', border: '1px dashed var(--border)', borderRadius: '8px', color: 'rgba(255,255,255,0.5)' }}>
-                    No {activeTab} purchases found.
-                </div>
-            ) : (
-                <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ background: 'rgba(255,255,255,0.02)', borderBottom: '1px solid var(--border)' }}>
-                            <tr>
-                                <th style={{ padding: '1rem', fontSize: '0.875rem', opacity: 0.6 }}>Date</th>
-                                <th style={{ padding: '1rem', fontSize: '0.875rem', opacity: 0.6 }}>Supplier</th>
-                                <th style={{ padding: '1rem', fontSize: '0.875rem', opacity: 0.6 }}>Note</th>
-                                <th style={{ padding: '1rem', fontSize: '0.875rem', opacity: 0.6, textAlign: 'right' }}>Action</th>
+            <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead style={{ background: 'rgba(255,255,255,0.02)' }}>
+                        <tr>
+                            <th style={{ padding: '1rem', textAlign: 'left', opacity: 0.7 }}>Date</th>
+                            <th style={{ padding: '1rem', textAlign: 'left', opacity: 0.7 }}>Supplier</th>
+                            <th style={{ padding: '1rem', textAlign: 'center', opacity: 0.7 }}>Status</th>
+                            <th style={{ padding: '1rem', textAlign: 'center', opacity: 0.7 }}>Payment</th>
+                            <th style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>Amount</th>
+                            <th style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>Expected</th>
+                            <th style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {purchases?.map(p => (
+                            <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                                <td style={{ padding: '1rem', opacity: 0.8 }}>
+                                    {new Date(p.created_at).toLocaleDateString()}
+                                </td>
+                                <td style={{ padding: '1rem', fontWeight: 500 }}>
+                                    {p.suppliers?.name || 'Unknown'}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    <span style={{
+                                        padding: '0.25rem 0.75rem',
+                                        borderRadius: '20px',
+                                        fontSize: '0.75rem',
+                                        fontWeight: 600,
+                                        background: p.status === 'ordered' ? 'rgba(255, 165, 0, 0.2)' :
+                                            p.status === 'received' ? 'rgba(34, 197, 94, 0.2)' :
+                                                'rgba(255,255,255,0.1)',
+                                        color: p.status === 'ordered' ? 'orange' :
+                                            p.status === 'received' ? '#22c55e' :
+                                                'inherit'
+                                    }}>
+                                        {p.status.toUpperCase()}
+                                    </span>
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    <span style={{
+                                        fontSize: '0.75rem',
+                                        opacity: 0.8,
+                                        padding: '0.25rem 0.5rem',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '4px',
+                                        background: p.payment_status === 'paid' ? 'rgba(34, 197, 94, 0.1)' : 'transparent',
+                                        color: p.payment_status === 'paid' ? '#22c55e' : 'inherit'
+                                    }}>
+                                        {(p.payment_status || 'pending').toUpperCase()}
+                                    </span>
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>
+                                    ${p.total_amount?.toLocaleString() ?? '0.00'}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'right', opacity: 0.7 }}>
+                                    {p.expected_date ? new Date(p.expected_date).toLocaleDateString() : '-'}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'right' }}>
+                                    <Link
+                                        href={`/inventory/purchases/${p.id}`}
+                                        className="btn"
+                                        style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: 'var(--surface)', border: '1px solid var(--border)' }}
+                                    >
+                                        View
+                                    </Link>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {filteredPurchases.map(purchase => (
-                                <tr key={purchase.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                                    <td style={{ padding: '1rem' }}>
-                                        {new Date(purchase.created_at).toLocaleDateString()}
-                                    </td>
-                                    <td style={{ padding: '1rem', fontWeight: 500 }}>{purchase.supplier_name}</td>
-                                    <td style={{ padding: '1rem', opacity: 0.7 }}>{purchase.note || '-'}</td>
-                                    <td style={{ padding: '1rem', textAlign: 'right' }}>
-                                        <Link href={`/inventory/purchases/${purchase.id}`} className="btn" style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem' }}>
-                                            View
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
+                        ))}
+                        {(!purchases || purchases.length === 0) && (
+                            <tr>
+                                <td colSpan={6} style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
+                                    No purchase orders found.
+                                </td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
         </div>
     )
 }

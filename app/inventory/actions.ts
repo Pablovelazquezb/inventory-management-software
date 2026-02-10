@@ -494,3 +494,188 @@ export async function sellBatchItems(
 
     return { success: true }
 }
+// SUPPLIERS ACTIONS
+
+export async function createSupplier(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    const name = formData.get('name') as string
+    const contactInfo = formData.get('contact_info') as string
+
+    if (!name || name.trim() === '') return { error: 'Supplier name is required' }
+
+    const { error } = await supabase.from('suppliers').insert({
+        name,
+        contact_info: contactInfo
+    })
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/inventory/suppliers')
+    return { success: true }
+}
+
+export async function updateSupplier(id: string, prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    // Auth check
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const name = formData.get('name') as string
+    const contactInfo = formData.get('contact_info') as string
+
+    if (!name || name.trim() === '') return { error: 'Supplier name is required' }
+
+    const { error } = await supabase.from('suppliers').update({
+        name,
+        contact_info: contactInfo
+    }).eq('id', id)
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/inventory/suppliers')
+    return { success: true }
+}
+
+export async function deleteSupplier(id: string) {
+    const supabase = await createClient()
+    const { error } = await supabase.from('suppliers').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    revalidatePath('/inventory/suppliers')
+}
+
+// PURCHASES ACTIONS
+
+export async function createPurchase(
+    supplierId: string,
+    items: { itemId: string; quantity: number; cost: number }[],
+    totalAmount: number,
+    expectedDate?: string,
+    documentUrl?: string,
+    taxRate: number = 0,
+    paymentStatus: string = 'pending',
+    notes: string = ''
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    if (!supplierId) return { error: 'Supplier is required' }
+    if (!items || items.length === 0) return { error: 'No items in purchase order' }
+
+    // 1. Create Purchase Record
+    const { data: purchase, error: purchaseError } = await supabase
+        .from('purchases')
+        .insert({
+            supplier_id: supplierId,
+            total_amount: totalAmount,
+            expected_date: expectedDate || null,
+            document_url: documentUrl || null,
+            status: 'ordered',
+            tax_rate: taxRate,
+            payment_status: paymentStatus,
+            notes: notes
+        })
+        .select()
+        .single()
+
+    if (purchaseError) return { error: purchaseError.message }
+
+    // 2. Create Purchase Items
+    const purchaseItems = items.map(item => ({
+        purchase_id: purchase.id,
+        item_id: item.itemId,
+        quantity_ordered: item.quantity,
+        cost_per_unit: item.cost,
+        quantity_received: 0
+    }))
+
+    const { error: itemsError } = await supabase
+        .from('purchase_items')
+        .insert(purchaseItems)
+
+    if (itemsError) {
+        // compensate? delete purchase? for now just return error
+        console.error('Error creating purchase items', itemsError)
+        return { error: 'Failed to save purchase items' }
+    }
+
+    revalidatePath('/inventory/purchases')
+    return { success: true, id: purchase.id }
+}
+
+export async function updatePurchasePaymentStatus(id: string, status: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const { error } = await supabase
+        .from('purchases')
+        .update({ payment_status: status })
+        .eq('id', id)
+
+    if (error) return { error: error.message }
+    revalidatePath(`/inventory/purchases/${id}`)
+    revalidatePath('/inventory/purchases')
+    return { success: true }
+}
+
+
+export async function receivePurchaseItems(
+    purchaseId: string,
+    items: { id: string; itemId: string; quantityReceived: number }[]
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    // 1. Update Purchase Status
+    const { error: statusError } = await supabase
+        .from('purchases')
+        .update({ status: 'received' })
+        .eq('id', purchaseId)
+
+    if (statusError) return { error: 'Failed to update purchase status' }
+
+    // 2. Update Items and Inventory
+    for (const item of items) {
+        // Update purchase_items
+        await supabase
+            .from('purchase_items')
+            .update({ quantity_received: item.quantityReceived })
+            .eq('id', item.id)
+
+        // Increment Inventory
+        const { data: invItem } = await supabase
+            .from('inventory_items')
+            .select('quantity')
+            .eq('id', item.itemId)
+            .single()
+
+        if (invItem) {
+            await supabase
+                .from('inventory_items')
+                .update({ quantity: invItem.quantity + item.quantityReceived })
+                .eq('id', item.itemId)
+
+            // Log stock entry
+            await supabase.from('stock_entries').insert({
+                item_id: item.itemId,
+                quantity_added: item.quantityReceived,
+                user_id: user.id,
+                note: `Purchase Order Received` // Could add PO ID here
+            })
+        }
+    }
+
+    revalidatePath('/inventory/purchases')
+    revalidatePath('/inventory')
+    return { success: true }
+}
+

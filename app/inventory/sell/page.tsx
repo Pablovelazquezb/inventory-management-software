@@ -184,33 +184,55 @@ export default function SellPage() {
                         />
                         {(searchTerm || showSuggestions) && (
                             <div style={{ marginTop: '0.5rem', maxHeight: '300px', overflowY: 'auto', border: '1px solid var(--border)', borderRadius: '8px' }}>
-                                {filteredItems.length > 0 ? filteredItems.map(item => (
-                                    <div
-                                        key={item.id}
-                                        onClick={() => addToCart(item)}
-                                        style={{
-                                            padding: '0.75rem',
-                                            cursor: 'pointer',
-                                            borderBottom: '1px solid var(--border)',
-                                            background: 'rgba(255,255,255,0.02)',
-                                            display: 'flex',
-                                            justifyContent: 'space-between',
-                                            alignItems: 'center'
-                                        }}
-                                        className="hover-bg"
-                                    >
-                                        <div>
-                                            <div style={{ fontWeight: 500 }}>{item.name}</div>
-                                            <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{item.sku}</div>
-                                        </div>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div style={{ fontWeight: 600 }}>${item.price}</div>
-                                            <div style={{ fontSize: '0.75rem', opacity: item.quantity > 0 ? 0.5 : 1, color: item.quantity > 0 ? 'inherit' : 'var(--error)' }}>
-                                                {item.quantity} in stock
+                                {filteredItems.length > 0 ? (
+                                    Object.entries(filteredItems.reduce((acc, item) => {
+                                        const cat = item.category || 'Uncategorized'
+                                        if (!acc[cat]) acc[cat] = []
+                                        acc[cat].push(item)
+                                        return acc
+                                    }, {} as Record<string, typeof items>)).sort().map(([category, categoryItems]) => (
+                                        <div key={category}>
+                                            <div style={{
+                                                padding: '0.5rem 0.75rem',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                fontSize: '0.75rem',
+                                                fontWeight: 600,
+                                                opacity: 0.7,
+                                                borderBottom: '1px solid var(--border)',
+                                                borderTop: '1px solid var(--border)'
+                                            }}>
+                                                {category}
                                             </div>
+                                            {categoryItems.map(item => (
+                                                <div
+                                                    key={item.id}
+                                                    onClick={() => addToCart(item)}
+                                                    style={{
+                                                        padding: '0.75rem',
+                                                        cursor: 'pointer',
+                                                        borderBottom: '1px solid var(--border)',
+                                                        background: 'rgba(255,255,255,0.02)',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center'
+                                                    }}
+                                                    className="hover-bg"
+                                                >
+                                                    <div>
+                                                        <div style={{ fontWeight: 500 }}>{item.name}</div>
+                                                        <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>{item.sku}</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontWeight: 600 }}>${item.price}</div>
+                                                        <div style={{ fontSize: '0.75rem', opacity: item.quantity > 0 ? 0.5 : 1, color: item.quantity > 0 ? 'inherit' : 'var(--error)' }}>
+                                                            {item.quantity} in stock
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    </div>
-                                )) : (
+                                    ))
+                                ) : (
                                     <div style={{ padding: '1rem', opacity: 0.5, textAlign: 'center' }}>No matches found</div>
                                 )}
                             </div>
