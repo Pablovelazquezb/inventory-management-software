@@ -3,16 +3,18 @@
 import { useActionState, useState, useEffect } from 'react'
 import { updateItem } from '../../actions'
 import Link from 'next/link'
+import { useTranslation } from '@/hooks/useTranslation'
 
 const initialState = {
     error: '',
 }
 
 export default function EditItemForm({ item, categories, subcategories }: { item: any, categories: any[], subcategories: any[] }) {
+    const { t } = useTranslation()
     const updateItemWithId = updateItem.bind(null, item.id)
     const [state, formAction, isPending] = useActionState(updateItemWithId, initialState)
 
-    const [selectedCategory, setSelectedCategory] = useState(item.category) // existing name
+    const [selectedCategory, setSelectedCategory] = useState(item.category)
     const [filteredSubcategories, setFilteredSubcategories] = useState<any[]>([])
 
     // Image Upload State
@@ -22,7 +24,6 @@ export default function EditItemForm({ item, categories, subcategories }: { item
 
     useEffect(() => {
         if (selectedCategory) {
-            // Match category name to object to get ID for filtering
             const catObj = categories.find(c => c.name === selectedCategory)
             if (catObj) {
                 setFilteredSubcategories(subcategories.filter(s => s.category_id === catObj.id))
@@ -45,8 +46,6 @@ export default function EditItemForm({ item, categories, subcategories }: { item
             const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
             const filePath = `${fileName}`
 
-            // Need to import createClient here or use props? Best to use import.
-            // Client component uses browser client
             const { createClient } = await import('@/utils/supabase/client')
             const supabase = createClient()
 
@@ -82,7 +81,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'start', marginBottom: '1rem' }}>
                     <div style={{ width: '120px', height: '120px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.02)' }}>
                         {uploading ? (
-                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>Uploading...</span>
+                            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{t.inventory.uploading}</span>
                         ) : imageUrl ? (
                             <img src={imageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -96,9 +95,9 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                         />
                     </div>
                     <div style={{ flex: 1 }}>
-                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Item Image</label>
+                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.productImage}</label>
                         <p style={{ fontSize: '0.85rem', opacity: 0.5, lineHeight: '1.4' }}>
-                            Click to change the product image.
+                            {t.inventory.imageHelp}
                         </p>
                         {error && <p style={{ color: 'var(--error)', fontSize: '0.8rem', marginTop: '0.5rem' }}>{error}</p>}
                     </div>
@@ -106,7 +105,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
 
                 <div>
                     <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                        Item Name
+                        {t.inventory.name}
                     </label>
                     <input className="input" name="name" defaultValue={item.name} required />
                 </div>
@@ -115,10 +114,10 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
                             <label className="text-md" style={{ display: 'block', fontSize: '0.875rem', opacity: 0.8 }}>
-                                Category
+                                {t.inventory.category}
                             </label>
                             <Link href="/inventory/categories" style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
-                                Manage
+                                {t.inventory.manage}
                             </Link>
                         </div>
                         <select
@@ -128,7 +127,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                             value={selectedCategory}
                             onChange={(e) => setSelectedCategory(e.target.value)}
                         >
-                            <option value="" disabled>Select a category</option>
+                            <option value="" disabled>{t.inventory.selectCategory}</option>
                             {categories.map((cat) => (
                                 <option key={cat.id} value={cat.name}>{cat.name}</option>
                             ))}
@@ -138,7 +137,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                     <div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
                             <label className="text-md" style={{ display: 'block', fontSize: '0.875rem', opacity: 0.8 }}>
-                                Subcategory
+                                {t.inventory.subcategory}
                             </label>
                         </div>
                         <select
@@ -147,7 +146,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                             defaultValue={item.subcategory_id || ''}
                             disabled={!selectedCategory || filteredSubcategories.length === 0}
                         >
-                            <option value="">Select subcategory</option>
+                            <option value="">{t.inventory.selectSubcategory}</option>
                             {filteredSubcategories.map((sub) => (
                                 <option key={sub.id} value={sub.id}>{sub.name}</option>
                             ))}
@@ -158,13 +157,13 @@ export default function EditItemForm({ item, categories, subcategories }: { item
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                     <div>
                         <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                            Price ($)
+                            {t.inventory.price} ($)
                         </label>
                         <input className="input" name="price" type="number" step="0.01" defaultValue={item.price} required />
                     </div>
                     <div>
                         <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                            Quantity
+                            {t.inventory.quantity}
                         </label>
                         <input className="input" name="quantity" type="number" defaultValue={item.quantity} required />
                     </div>
@@ -172,14 +171,14 @@ export default function EditItemForm({ item, categories, subcategories }: { item
 
                 <div>
                     <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                        Weight (kg)
+                        {t.inventory.weight} ({t.inventory.kg})
                     </label>
                     <input className="input" name="weight" type="number" step="0.01" defaultValue={item.weight || ''} />
                 </div>
 
                 <div>
                     <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>
-                        Description
+                        {t.inventory.description}
                     </label>
                     <textarea className="input" name="description" rows={4} defaultValue={item.description} style={{ minHeight: '100px', resize: 'vertical' }} />
                 </div>
@@ -192,7 +191,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem' }}>
                     <button disabled={isPending || uploading} className="btn btn-primary" style={{ minWidth: '150px' }}>
-                        {isPending ? 'Updating...' : 'Update Item'}
+                        {isPending ? t.inventory.saving : t.inventory.saveChanges}
                     </button>
                 </div>
             </form>

@@ -2,50 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
-
-const MENU_ITEMS = [
-    {
-        label: 'Dashboard',
-        href: '/dashboard',
-        icon: '📊'
-    },
-    {
-        label: 'Ventas',
-        icon: '💰',
-        subItems: [
-            { label: 'Nueva Venta', href: '/inventory/sell' },
-            { label: 'Historial', href: '/inventory/sales' },
-        ]
-    },
-    {
-        label: 'Compras',
-        icon: '🛒',
-        subItems: [
-            { label: 'Proveedores', href: '/inventory/suppliers' },
-            { label: 'Nueva Compra', href: '/inventory/purchases/new' },
-            { label: 'Historial', href: '/inventory/purchases' },
-        ]
-    },
-    {
-        label: 'Inventario',
-        icon: '📦',
-        subItems: [
-            { label: 'Lista', href: '/inventory', exact: true },
-            { label: 'Catálogo', href: '/inventory/catalog' },
-            { label: 'Categorías', href: '/inventory/categories' },
-            { label: 'Agregar Item', href: '/inventory/add' },
-        ]
-    }
-]
+import { useState, useEffect } from 'react'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function Sidebar({ user }: { user: any }) {
     const pathname = usePathname()
+    const { t } = useTranslation()
+    const [mounted, setMounted] = useState(false)
     const [expanded, setExpanded] = useState<Record<string, boolean>>({
         'Ventas': true,
         'Compras': true,
         'Inventario': true
     })
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const toggle = (label: string) => {
         setExpanded(prev => ({ ...prev, [label]: !prev[label] }))
@@ -56,7 +28,51 @@ export default function Sidebar({ user }: { user: any }) {
         return pathname === href || pathname.startsWith(href + '/')
     }
 
+    if (!mounted) return null
     if (!user) return null
+
+    const MENU_ITEMS = [
+        {
+            label: t.common.dashboard,
+            href: '/dashboard',
+            icon: '📊'
+        },
+        {
+            label: t.common.sales,
+            icon: '💰',
+            id: 'Ventas',
+            subItems: [
+                { label: t.sidebar.newSale, href: '/inventory/sell' },
+                { label: t.sidebar.salesHistory, href: '/inventory/sales' },
+            ]
+        },
+        {
+            label: t.common.purchases,
+            icon: '🛒',
+            id: 'Compras',
+            subItems: [
+                { label: t.sidebar.suppliers, href: '/inventory/suppliers' },
+                { label: t.sidebar.newPurchase, href: '/inventory/purchases/new' },
+                { label: t.sidebar.purchaseHistory, href: '/inventory/purchases' },
+            ]
+        },
+        {
+            label: t.common.inventory,
+            icon: '📦',
+            id: 'Inventario',
+            subItems: [
+                { label: t.sidebar.list, href: '/inventory', exact: true },
+                { label: t.sidebar.catalog, href: '/inventory/catalog' },
+                { label: t.sidebar.categories, href: '/inventory/categories' },
+                { label: t.sidebar.addItem, href: '/inventory/add' },
+            ]
+        },
+        {
+            label: t.common.settings,
+            href: '/inventory/settings',
+            icon: '⚙️'
+        }
+    ]
 
     return (
         <aside style={{
@@ -82,7 +98,7 @@ export default function Sidebar({ user }: { user: any }) {
                             {item.subItems ? (
                                 <div>
                                     <button
-                                        onClick={() => toggle(item.label)}
+                                        onClick={() => toggle(item.id!)}
                                         style={{
                                             width: '100%',
                                             display: 'flex',
@@ -105,7 +121,7 @@ export default function Sidebar({ user }: { user: any }) {
                                             {item.label}
                                         </span>
                                         <span style={{
-                                            transform: expanded[item.label] ? 'rotate(180deg)' : 'rotate(0deg)',
+                                            transform: expanded[item.id!] ? 'rotate(180deg)' : 'rotate(0deg)',
                                             transition: 'transform 0.2s',
                                             fontSize: '0.8rem',
                                             opacity: 0.5
@@ -114,7 +130,7 @@ export default function Sidebar({ user }: { user: any }) {
                                         </span>
                                     </button>
 
-                                    {expanded[item.label] && (
+                                    {expanded[item.id!] && (
                                         <ul style={{
                                             listStyle: 'none',
                                             paddingLeft: '2.5rem',
@@ -180,7 +196,7 @@ export default function Sidebar({ user }: { user: any }) {
                         color: 'var(--error)',
                         fontSize: '0.875rem'
                     }}>
-                        Sign Out
+                        {t.common.logout}
                     </button>
                 </form>
             </div>

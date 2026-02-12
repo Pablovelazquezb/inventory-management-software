@@ -5,8 +5,10 @@ import { createClient } from '@/utils/supabase/client'
 import { createPurchase } from '../../actions'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function NewPurchasePage() {
+    const { t } = useTranslation()
     const router = useRouter()
     const [suppliers, setSuppliers] = useState<any[]>([])
     const [inventoryItems, setInventoryItems] = useState<any[]>([])
@@ -59,7 +61,7 @@ export default function NewPurchasePage() {
             const formElement = document.getElementById('add-item-form')
             if (formElement) formElement.scrollIntoView({ behavior: 'smooth' })
         } else {
-            if (confirm(`Item "${rec.name}" not found in your inventory. Create it first?`)) {
+            if (confirm(t.purchases.itemNotFoundConfirm.replace('{name}', rec.name))) {
                 // Logic to redirect to create item or open modal? 
                 // For now just alert or redirect
                 router.push(`/inventory/add?name=${encodeURIComponent(rec.name)}&image=${encodeURIComponent(rec.image_url || '')}`)
@@ -112,8 +114,8 @@ export default function NewPurchasePage() {
     const totalAmount = subtotal + taxAmount
 
     const handleSubmit = async () => {
-        if (!supplierId) return alert('Please select a supplier')
-        if (cart.length === 0) return alert('Please add items to the order')
+        if (!supplierId) return alert(t.purchases.selectSupplierAlert)
+        if (cart.length === 0) return alert(t.purchases.emptyOrderAlert)
 
         setSubmitting(true)
         const result = await createPurchase(
@@ -142,31 +144,31 @@ export default function NewPurchasePage() {
         <div style={{ maxWidth: '800px', margin: '0 auto', paddingBottom: '4rem' }}>
             <div style={{ marginBottom: '2rem' }}>
                 <Link href="/inventory" style={{ fontSize: '0.875rem', opacity: 0.5, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    ← Back
+                    {t.purchases.back}
                 </Link>
-                <h1 style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem' }}>New Purchase Order</h1>
+                <h1 style={{ fontSize: '2rem', fontWeight: 700, marginTop: '0.5rem' }}>{t.purchases.newOrderTitle}</h1>
             </div>
 
             <div className="card" style={{ padding: '2rem', marginBottom: '2rem' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '2rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Supplier</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.supplier}</label>
                         <select
                             className="input"
                             value={supplierId}
                             onChange={(e) => setSupplierId(e.target.value)}
                         >
-                            <option value="">Select Supplier...</option>
+                            <option value="">{t.purchases.selectSupplier}</option>
                             {suppliers.map(s => (
                                 <option key={s.id} value={s.id}>{s.name}</option>
                             ))}
                         </select>
                         <div style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>
-                            <Link href="/inventory/suppliers" style={{ color: 'var(--primary)' }}>+ Manage Suppliers</Link>
+                            <Link href="/inventory/suppliers" style={{ color: 'var(--primary)' }}>{t.purchases.manageSuppliers}</Link>
                         </div>
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Expected Date</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.expectedDate}</label>
                         <input
                             type="date"
                             className="input"
@@ -178,7 +180,7 @@ export default function NewPurchasePage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '1.5rem', marginBottom: '2rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>IVA (16%)</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.iva}</label>
                         <div style={{ display: 'flex', alignItems: 'center', height: '42px' }}>
                             <input
                                 type="checkbox"
@@ -186,27 +188,27 @@ export default function NewPurchasePage() {
                                 onChange={(e) => setTaxEnabled(e.target.checked)}
                                 style={{ width: '20px', height: '20px' }}
                             />
-                            <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>Apply Tax</span>
+                            <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>{t.purchases.applyTax}</span>
                         </div>
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Payment Status</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.paymentStatus}</label>
                         <select
                             className="input"
                             value={paymentStatus}
                             onChange={(e) => setPaymentStatus(e.target.value)}
                         >
-                            <option value="pending">Pending</option>
-                            <option value="partial">Partial</option>
-                            <option value="paid">Paid</option>
+                            <option value="pending">{t.purchases.pending}</option>
+                            <option value="partial">{t.purchases.partial}</option>
+                            <option value="paid">{t.purchases.paid}</option>
                         </select>
                     </div>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Notes</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.notes}</label>
                         <textarea
                             className="input"
                             rows={1}
-                            placeholder="Optional notes..."
+                            placeholder={t.purchases.notesPlaceholder}
                             value={notes}
                             onChange={(e) => setNotes(e.target.value)}
                         />
@@ -216,7 +218,7 @@ export default function NewPurchasePage() {
                 {/* Recommendations Carousel */}
                 {recommendations.length > 0 && (
                     <div style={{ marginBottom: '2rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.7 }}>Recommended from Catalog</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.7 }}>{t.purchases.recommended}</label>
                         <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }} className="scrollbar-hide">
                             {recommendations.map(rec => (
                                 <div
@@ -253,23 +255,23 @@ export default function NewPurchasePage() {
                 {/* Add Item Form */}
                 <div id="add-item-form" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
 
-                    <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>Add Items</h3>
+                    <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>{t.purchases.addItems}</h3>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
                         <div style={{ flex: 2 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>Product</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>{t.purchases.product}</label>
                             <select
                                 className="input"
                                 value={selectedItem}
                                 onChange={(e) => setSelectedItem(e.target.value)}
                             >
-                                <option value="">Select Product...</option>
+                                <option value="">{t.purchases.selectProduct}</option>
                                 {inventoryItems.map(i => (
                                     <option key={i.id} value={i.id}>{i.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>Quantity</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>{t.purchases.quantity}</label>
                             <input
                                 type="number"
                                 className="input"
@@ -279,7 +281,7 @@ export default function NewPurchasePage() {
                             />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>Cost/Unit</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>{t.purchases.costUnit}</label>
                             <input
                                 type="number"
                                 className="input"
@@ -294,7 +296,7 @@ export default function NewPurchasePage() {
                             onClick={addItemToOrder}
                             disabled={!selectedItem}
                         >
-                            Add
+                            {t.purchases.add}
                         </button>
                     </div>
                 </div>
@@ -303,10 +305,10 @@ export default function NewPurchasePage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '2rem' }}>
                     <thead>
                         <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                            <th style={{ padding: '0.75rem', opacity: 0.6 }}>Product</th>
-                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Qty</th>
-                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Cost</th>
-                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>Total</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6 }}>{t.purchases.product}</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>{t.purchases.quantity}</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>{t.purchases.amount}</th>
+                            <th style={{ padding: '0.75rem', opacity: 0.6, textAlign: 'right' }}>{t.purchases.total}</th>
                             <th style={{ padding: '0.75rem', opacity: 0.6 }}></th>
                         </tr>
                     </thead>
@@ -329,25 +331,25 @@ export default function NewPurchasePage() {
                         ))}
                         {cart.length === 0 && (
                             <tr>
-                                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>Order items will appear here</td>
+                                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', opacity: 0.5 }}>{t.purchases.emptyCart}</td>
                             </tr>
                         )}
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>Subtotal:</td>
+                            <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>{t.purchases.subtotal}:</td>
                             <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${subtotal.toFixed(2)}</td>
                             <td></td>
                         </tr>
                         {taxEnabled && (
                             <tr>
-                                <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>IVA (16%):</td>
+                                <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>{t.purchases.iva}:</td>
                                 <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${taxAmount.toFixed(2)}</td>
                                 <td></td>
                             </tr>
                         )}
                         <tr>
-                            <td colSpan={3} style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>Total:</td>
+                            <td colSpan={3} style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>{t.purchases.total}:</td>
                             <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, fontSize: '1.2rem', color: 'var(--primary)' }}>
                                 ${totalAmount.toFixed(2)}
                             </td>
@@ -363,7 +365,7 @@ export default function NewPurchasePage() {
                         onClick={handleSubmit}
                         disabled={submitting || cart.length === 0}
                     >
-                        {submitting ? 'Creating Order...' : 'Create Purchase Order'}
+                        {submitting ? t.purchases.creating : t.purchases.createOrder}
                     </button>
                 </div>
 

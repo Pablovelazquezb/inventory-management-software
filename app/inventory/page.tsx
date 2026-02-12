@@ -1,7 +1,7 @@
 
 import { createClient } from '@/utils/supabase/server'
-import Link from 'next/link'
 import InventoryList from './InventoryList'
+import InventoryHeader from './InventoryHeader'
 
 export default async function InventoryPage() {
     const supabase = await createClient()
@@ -22,13 +22,7 @@ export default async function InventoryPage() {
 
     return (
         <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Inventory</h2>
-                <Link href="/inventory/add" className="btn btn-primary">
-                    Add New Item
-                </Link>
-            </div>
-
+            <InventoryHeader />
             <InventoryList initialItems={items || []} />
         </div>
     )

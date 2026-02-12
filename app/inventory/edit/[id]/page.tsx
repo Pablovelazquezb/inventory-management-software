@@ -1,8 +1,8 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import EditItemForm from './EditItemForm'
+import EditItemHeader from './EditItemHeader'
 
 export default async function EditItemPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
@@ -23,14 +23,7 @@ export default async function EditItemPage({ params }: { params: Promise<{ id: s
 
     return (
         <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <div style={{ marginBottom: '2rem' }}>
-                <Link href="/inventory" style={{ fontSize: '0.875rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-                    ← Back to Inventory
-                </Link>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Edit Item</h2>
-                </div>
-            </div>
+            <EditItemHeader />
 
             <EditItemForm
                 item={item}

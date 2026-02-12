@@ -1,21 +1,16 @@
 'use client'
 
 import { useState } from 'react'
-import { deleteItem, splitItem } from './actions'
+import { splitItem } from './actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import ProductDetailsModal from './ProductDetailsModal'
+import { useTranslation } from '@/hooks/useTranslation'
 
 // Helper to group items
 const groupItems = (items: any[]) => {
     const groups: { [key: string]: any[] } = {}
     items.forEach(item => {
-        // Group by Name + Subcategory ID (to keep variants together but separate if really different)
-        // User asked: "siguen siendo el mismo item... vaso con 2kg otro con 4kg"
-        // So we group by Name. If they share name but are different weight, they are in the same group.
-        // We probably also want to respect category/subcategory. 
-        // A "Vaso" in "Kitchen" is the same group. 
-        // Key: name + subcategory_id + category
         const key = `${item.name}-${item.subcategory_id || 'null'}-${item.category || 'null'}`
         if (!groups[key]) {
             groups[key] = []
@@ -41,6 +36,7 @@ interface InventoryItem {
 }
 
 export default function InventoryList({ initialItems }: { initialItems: InventoryItem[] }) {
+    const { t } = useTranslation()
     const [items, setItems] = useState<InventoryItem[]>(initialItems)
 
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
@@ -57,7 +53,6 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
         acc[cat].push(item)
         return acc
     }, {} as { [category: string]: InventoryItem[] })
-
 
 
     const startEdit = (item: InventoryItem) => {
@@ -83,7 +78,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
     }
 
     const handleSplit = async (id: string) => {
-        if (!confirm('This will separate 1 unit from this batch so you can edit it individually. Continue?')) return
+        if (!confirm(t.inventory.confirmSplit)) return
         setSplittingId(id)
         await splitItem(id)
         window.location.reload()
@@ -123,8 +118,6 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                     return acc
                 }, {} as { [key: string]: InventoryItem[] })
 
-                // Sort subcategories: put 'General' last or first? Usually users create explicit ones.
-                // Let's sort alphabetically but keeping General at the bottom if possible, or just alpha.
                 const sortedSubkeys = Object.keys(subGroups).sort()
 
                 return (
@@ -147,14 +140,14 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                 fontSize: '1.25rem', fontWeight: 600, color: 'var(--foreground)',
                                 letterSpacing: '-0.02em', margin: 0
                             }}>
-                                {category}
+                                {category === 'Uncategorized' ? t.inventory.uncategorized : category}
                             </h2>
                             <span style={{
                                 fontSize: '0.75rem', padding: '0.2rem 0.6rem',
                                 borderRadius: '99px', background: 'rgba(255,255,255,0.05)',
                                 color: 'rgba(255,255,255,0.6)'
                             }}>
-                                {count} items
+                                {count} {t.inventory.itemsCount}
                             </span>
                         </button>
 
@@ -165,10 +158,6 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                     const subKey = `${category}-${subName}`
                                     const isSubCollapsed = collapsedSubcategories[subKey]
                                     const isGeneral = subName === 'General'
-
-                                    // If it's just 'General' and it's the ONLY group, maybe omit the header?
-                                    // User asked for subcategories to look like categories.
-                                    // Let's show header for all subcategories to be consistent.
 
                                     return (
                                         <div key={subKey} style={{ borderBottom: subIndex === sortedSubkeys.length - 1 ? 'none' : '1px solid var(--border)' }}>
@@ -244,7 +233,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                                     style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', width: 'fit-content' }}
                                                                     title="Click to edit weight"
                                                                 >
-                                                                    <span style={{ opacity: item.weight ? 1 : 0.4 }}>{item.weight ? `${item.weight} kg` : 'Set Weight'}</span>
+                                                                    <span style={{ opacity: item.weight ? 1 : 0.4 }}>{item.weight ? `${item.weight} ${t.inventory.kg}` : t.inventory.setWeight}</span>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -258,7 +247,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                                 borderRadius: '6px',
                                                                 fontSize: '0.875rem'
                                                             }}>
-                                                                {item.quantity} <span style={{ fontSize: '0.85em', opacity: 0.8 }}>{item.unit_type === 'kg' ? 'kg' : 'units'}</span>
+                                                                {item.quantity} <span style={{ fontSize: '0.85em', opacity: 0.8 }}>{item.unit_type === 'kg' ? t.inventory.kg : t.inventory.unit}</span>
                                                             </span>
                                                         </div>
 
@@ -268,10 +257,10 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                                 onClick={() => setSelectedItem(item)}
                                                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)' }}
                                                             >
-                                                                View
+                                                                {t.inventory.view}
                                                             </button>
                                                             <Link href={`/inventory/edit/${item.id}`} className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)' }}>
-                                                                Edit
+                                                                {t.inventory.edit}
                                                             </Link>
                                                         </div>
                                                     </div>
@@ -288,7 +277,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
 
             {items.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
-                    No items found. Create one to get started.
+                    {t.inventory.noItems}
                 </div>
             )}
         </div>

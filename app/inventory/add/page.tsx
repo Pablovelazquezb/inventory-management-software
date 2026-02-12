@@ -5,8 +5,10 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function AddItemPage() {
+    const { t } = useTranslation()
     const router = useRouter()
     const [categories, setCategories] = useState<any[]>([])
     const [subcategories, setSubcategories] = useState<any[]>([])
@@ -36,7 +38,30 @@ export default function AddItemPage() {
     const [batchCount, setBatchCount] = useState(1)
     const [variants, setVariants] = useState<any[]>([])
 
-    // ... existing useEffects ...
+    useEffect(() => {
+        const fetchData = async () => {
+            const supabase = createClient()
+            const { data: catData } = await supabase.from('categories').select('*').order('name')
+            const { data: subData } = await supabase.from('subcategories').select('*').order('name')
+            if (catData) setCategories(catData)
+            if (subData) setSubcategories(subData)
+        }
+        fetchData()
+    }, [])
+
+    useEffect(() => {
+        if (selectedCategory) {
+            setFormData(prev => ({ ...prev, category: selectedCategory, subcategory_id: '' }))
+            const catObj = categories.find(c => c.name === selectedCategory)
+            if (catObj) {
+                setFilteredSubcategories(subcategories.filter(s => s.category_id === catObj.id))
+            } else {
+                setFilteredSubcategories([])
+            }
+        } else {
+            setFilteredSubcategories([])
+        }
+    }, [selectedCategory, categories, subcategories])
 
     const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         try {
@@ -122,10 +147,10 @@ export default function AddItemPage() {
             {/* ... Header ... */}
             <div style={{ marginBottom: '2rem' }}>
                 <Link href="/inventory" className="btn" style={{ paddingLeft: 0, color: 'rgba(248,250,252,0.6)' }}>
-                    ← Back to Inventory
+                    {t.inventory.backToInventory}
                 </Link>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>Add New Items</h2>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: 700 }}>{t.inventory.addHeader}</h2>
                 </div>
             </div>
 
@@ -136,7 +161,7 @@ export default function AddItemPage() {
                     <div style={{ display: 'flex', gap: '2rem', alignItems: 'start' }}>
                         <div style={{ width: '150px', height: '150px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.02)' }}>
                             {uploading ? (
-                                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>Uploading...</span>
+                                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{t.inventory.uploading}</span>
                             ) : defaultImageUrl ? (
                                 <img src={defaultImageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
@@ -150,10 +175,9 @@ export default function AddItemPage() {
                             />
                         </div>
                         <div style={{ flex: 1 }}>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Product Image</label>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.productImage}</label>
                             <p style={{ fontSize: '0.85rem', opacity: 0.5, lineHeight: '1.4' }}>
-                                Click the box to upload an image from your computer.
-                                <br />This image will be applied to all generated variants.
+                                {t.inventory.imageHelp}
                             </p>
                         </div>
                     </div>
@@ -165,19 +189,19 @@ export default function AddItemPage() {
                         {/* ... Category ... */}
                         <div>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.5rem' }}>
-                                <label className="text-md" style={{ display: 'block', opacity: 0.8 }}>Category</label>
-                                <Link href="/inventory/categories" style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>Manage</Link>
+                                <label className="text-md" style={{ display: 'block', opacity: 0.8 }}>{t.inventory.category}</label>
+                                <Link href="/inventory/categories" style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>{t.inventory.manage}</Link>
                             </div>
                             <select className="input" value={selectedCategory} onChange={e => setSelectedCategory(e.target.value)} required>
-                                <option value="" disabled>Select a category</option>
-                                <option value="Uncategorized">Uncategorized</option>
+                                <option value="" disabled>{t.inventory.selectCategory}</option>
+                                <option value="Uncategorized">{t.inventory.uncategorized}</option>
                                 {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
                             </select>
                         </div>
                         <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Subcategory <span style={{ fontSize: '0.7em', paddingLeft: '4px', opacity: 0.6 }}>(Optional)</span></label>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.subcategory} <span style={{ fontSize: '0.7em', paddingLeft: '4px', opacity: 0.6 }}>{t.inventory.optional}</span></label>
                             <select className="input" value={formData.subcategory_id} onChange={e => setFormData({ ...formData, subcategory_id: e.target.value })} disabled={!selectedCategory || filteredSubcategories.length === 0}>
-                                <option value="">Select subcategory</option>
+                                <option value="">{t.inventory.selectSubcategory}</option>
                                 {filteredSubcategories.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
                             </select>
                         </div>
@@ -187,15 +211,15 @@ export default function AddItemPage() {
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                         <div>
                             <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>
-                                Default Price ($)
+                                {t.inventory.defaultPrice}
                             </label>
                             <input className="input" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} placeholder="0.00" />
                         </div>
                         <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Unit Type</label>
+                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.unitType}</label>
                             <select className="input" value={formData.unit_type} onChange={e => setFormData({ ...formData, unit_type: e.target.value })}>
-                                <option value="unit">Units (pcs)</option>
-                                <option value="kg">Kilograms (kg)</option>
+                                <option value="unit">{t.inventory.unitsPcs}</option>
+                                <option value="kg">{t.inventory.kgs}</option>
                             </select>
                         </div>
                     </div>
@@ -203,7 +227,7 @@ export default function AddItemPage() {
                     {/* Variants Section (Always Visible) */}
                     <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
-                            <label className="text-md" style={{ opacity: 0.8 }}>Generate Item Slots</label>
+                            <label className="text-md" style={{ opacity: 0.8 }}>{t.inventory.generateSlots}</label>
                             <div style={{ display: 'flex', gap: '1rem' }}>
                                 <input
                                     className="input"
@@ -218,7 +242,7 @@ export default function AddItemPage() {
                                     onClick={handleGenerateVariants}
                                     className="btn btn-primary"
                                 >
-                                    Generate
+                                    {t.inventory.generate}
                                 </button>
                             </div>
                         </div>
@@ -226,11 +250,11 @@ export default function AddItemPage() {
                         {variants.length > 0 && (
                             <div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                    <div>ID (Opt)</div>
-                                    <div>Name</div>
-                                    <div>Price ($)</div>
-                                    <div>Quantity</div>
-                                    <div>Weight (kg)</div>
+                                    <div>{t.inventory.idOpt}</div>
+                                    <div>{t.inventory.name}</div>
+                                    <div>{t.inventory.price} ($)</div>
+                                    <div>{t.inventory.quantity}</div>
+                                    <div>{t.inventory.weight} (kg)</div>
                                     <div></div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -247,7 +271,7 @@ export default function AddItemPage() {
                                                 className="input"
                                                 value={v.name || ''}
                                                 onChange={e => updateVariant(i, 'name', e.target.value)}
-                                                placeholder="Item name"
+                                                placeholder={t.inventory.itemNamePlaceholder}
                                                 required
                                             />
                                             <input
@@ -256,7 +280,7 @@ export default function AddItemPage() {
                                                 step="0.01"
                                                 value={v.price}
                                                 onChange={e => updateVariant(i, 'price', e.target.value)}
-                                                placeholder={formData.price || "Price"}
+                                                placeholder={formData.price || t.inventory.price}
                                             />
                                             <input
                                                 className="input"
@@ -265,7 +289,7 @@ export default function AddItemPage() {
                                                 value={v.quantity}
                                                 onChange={e => updateVariant(i, 'quantity', e.target.value)}
                                                 required
-                                                placeholder="Qty"
+                                                placeholder={t.inventory.qtyPlaceholder}
                                             />
                                             <input
                                                 className="input"
@@ -273,7 +297,7 @@ export default function AddItemPage() {
                                                 step="0.01"
                                                 value={v.weight}
                                                 onChange={e => updateVariant(i, 'weight', e.target.value)}
-                                                placeholder="0.00 kg"
+                                                placeholder={`0.00 ${t.inventory.kg}`}
                                             />
                                             <button
                                                 type="button"
@@ -290,22 +314,22 @@ export default function AddItemPage() {
                                     onClick={addVariant}
                                     style={{ marginTop: '1rem', background: 'none', border: 'none', color: 'var(--primary)', cursor: 'pointer', fontSize: '0.875rem' }}
                                 >
-                                    + Add one more
+                                    {t.inventory.addOneMore}
                                 </button>
                             </div>
                         )}
                     </div>
 
                     <div>
-                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Description</label>
-                        <textarea className="input" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} placeholder="Common description..." style={{ resize: 'vertical' }} />
+                        <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.description}</label>
+                        <textarea className="input" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} rows={3} placeholder={t.inventory.commonDescription} style={{ resize: 'vertical' }} />
                     </div>
 
                     {error && <p style={{ color: 'var(--error)', textAlign: 'center' }}>{error}</p>}
 
                     <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '1rem' }}>
                         <button disabled={isPending || variants.length === 0} className="btn btn-primary" style={{ minWidth: '150px' }}>
-                            {isPending ? 'Saving...' : `Create ${variants.length} Items`}
+                            {isPending ? t.inventory.saving : `${t.inventory.createItems} (${variants.length})`}
                         </button>
                     </div>
 

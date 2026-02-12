@@ -1,15 +1,13 @@
 import { createClient } from '@/utils/supabase/server'
 import KPIGrid from './KPIGrid'
+import DashboardHeader from './DashboardHeader'
 import RevenueChart from './RevenueChart'
 import TopSellingList from './TopSellingList'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
 
-    // 1. Fetch Sales (All time for now, or last 30 days)
-    // To get "Income February", we'd need to filter by date. 
-    // For MVP, we'll fetch all and filter in JS or just show All Time.
-    // Let's fetch last 1000 sales to be safe for now
+    // 1. Fetch Sales
     const { data: sales, error } = await supabase
         .from('sales')
         .select('*')
@@ -35,15 +33,7 @@ export default async function DashboardPage() {
 
     return (
         <div className="container animate-slide-up" style={{ paddingBottom: '4rem' }}>
-            <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'end' }}>
-                <div>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Dashboard</h2>
-                    <p style={{ color: 'rgba(248,250,252,0.5)', margin: '0.5rem 0 0', fontSize: '1.1rem' }}>Overview of your inventory performance.</p>
-                </div>
-                <div style={{ textAlign: 'right', opacity: 0.5, fontSize: '0.875rem', background: 'rgba(255,255,255,0.05)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
-                    Data: Real-time
-                </div>
-            </div>
+            <DashboardHeader />
 
             {/* KPI Cards */}
             <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>

@@ -3,6 +3,7 @@
 import { createClient } from '@/utils/supabase/client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface ProductDetailsModalProps {
     item: any
@@ -10,6 +11,7 @@ interface ProductDetailsModalProps {
 }
 
 export default function ProductDetailsModal({ item, onClose }: ProductDetailsModalProps) {
+    const { t } = useTranslation()
     const [history, setHistory] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
 
@@ -45,7 +47,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                 ...(sales || []).map((s: any) => ({ ...s, type: 'sale' })),
                 ...(entries || []).map((e: any) => ({ ...e, type: 'restock' }))
             ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                .slice(0, 10) // Show top 10 recent activities
+                .slice(10) // Show top 10 recent activities
 
             setHistory(combined)
             setLoading(false)
@@ -130,7 +132,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                                 fontSize: '0.75rem',
                                 fontWeight: 600
                             }}>
-                                {item.category || 'Uncategorized'}
+                                {item.category || t.inventory.uncategorized}
                             </span>
                             {item.subcategories && (
                                 <span style={{
@@ -149,7 +151,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                                 fontSize: '0.75rem',
                                 color: 'white'
                             }}>
-                                {item.quantity <= 5 ? 'Low Stock' : 'In Stock'}
+                                {item.quantity <= 5 ? t.inventory.lowStock : t.inventory.inStock}
                             </span>
                         </div>
                         <h2 style={{ fontSize: '1.75rem', fontWeight: 700, lineHeight: 1.2 }}>{item.name}</h2>
@@ -171,15 +173,15 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                 }}>
 
                     <div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.25rem' }}>Stock</div>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.25rem' }}>{t.inventory.stock}</div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>
-                            {item.quantity} <span style={{ fontSize: '0.6em', opacity: 0.7 }}>{item.unit_type === 'kg' ? 'kg' : 'units'}</span>
+                            {item.quantity} <span style={{ fontSize: '0.6em', opacity: 0.7 }}>{item.unit_type === 'kg' ? t.inventory.kg : t.inventory.unit}</span>
                         </div>
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.25rem' }}>Weight/Unit</div>
+                        <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.25rem' }}>{t.inventory.weightPerUnit}</div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>
-                            {item.weight ? `${item.weight} kg` : '-'}
+                            {item.weight ? `${item.weight} ${t.inventory.kg}` : '-'}
                         </div>
                     </div>
                 </div>
@@ -187,17 +189,17 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                 {/* Description */}
                 {item.description && (
                     <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem', opacity: 0.9 }}>Description</h3>
+                        <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem', opacity: 0.9 }}>{t.inventory.description}</h3>
                         <p style={{ opacity: 0.7, lineHeight: 1.6, fontSize: '0.9rem' }}>{item.description}</p>
                     </div>
                 )}
 
                 {/* Recent History */}
                 <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', opacity: 0.9 }}>Recent Activity</h3>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem', opacity: 0.9 }}>{t.inventory.recentActivity}</h3>
 
                     {loading ? (
-                        <div style={{ opacity: 0.5, fontSize: '0.9rem' }}>Loading activity...</div>
+                        <div style={{ opacity: 0.5, fontSize: '0.9rem' }}>{t.inventory.loadingActivity}</div>
                     ) : history.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             {history.map((h, i) => (
@@ -212,7 +214,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                                 }}>
                                     <div>
                                         <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>
-                                            {h.type === 'sale' ? 'Sold' : 'Restocked'}
+                                            {h.type === 'sale' ? t.inventory.sold : t.inventory.restocked}
                                         </div>
                                         <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>
                                             {new Date(h.created_at).toLocaleDateString()}
@@ -232,13 +234,13 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                             ))}
                         </div>
                     ) : (
-                        <div style={{ opacity: 0.5, fontSize: '0.9rem', fontStyle: 'italic' }}>No recent activity found.</div>
+                        <div style={{ opacity: 0.5, fontSize: '0.9rem', fontStyle: 'italic' }}>{t.inventory.noActivity}</div>
                     )}
                 </div>
 
                 <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
                     <Link href={`/inventory/edit/${item.id}`} className="btn btn-primary">
-                        Edit Item
+                        {t.inventory.editItem}
                     </Link>
                 </div>
 

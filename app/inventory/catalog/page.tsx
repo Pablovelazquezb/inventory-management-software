@@ -5,8 +5,10 @@ import { createClient } from '@/utils/supabase/client'
 import { createCatalogItem, deleteCatalogItem } from '../actions'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function CatalogPage() {
+    const { t } = useTranslation()
     const searchParams = useSearchParams()
     const initialSupplierId = searchParams.get('supplier_id') || ''
 
@@ -48,7 +50,7 @@ export default function CatalogPage() {
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this product from the catalog?')) return
+        if (!confirm(t.catalog.confirmDelete)) return
         await deleteCatalogItem(id)
         fetchData()
     }
@@ -63,7 +65,7 @@ export default function CatalogPage() {
     const Modal = () => (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }} className="animate-fade-in">
             <div className="card animate-scale-in" style={{ width: '500px', padding: '2rem', maxHeight: '90vh', overflowY: 'auto' }}>
-                <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.5rem' }}>Add Catalog Product</h3>
+                <h3 style={{ marginTop: 0, marginBottom: '1.5rem', fontSize: '1.5rem' }}>{t.catalog.addTitle}</h3>
                 <form action={async (formData) => {
                     setSubmitting(true)
                     const res = await createCatalogItem(null, formData)
@@ -77,33 +79,33 @@ export default function CatalogPage() {
                 }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>Supplier</label>
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>{t.catalog.supplier}</label>
                             <select name="supplier_id" className="input" required defaultValue="">
-                                <option value="" disabled>Select Supplier</option>
+                                <option value="" disabled>{t.catalog.selectSupplier}</option>
                                 {suppliers.map(s => (
                                     <option key={s.id} value={s.id}>{s.name}</option>
                                 ))}
                             </select>
                         </div>
                         <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>Supplier SKU</label>
-                            <input name="supplier_sku" className="input" placeholder="Optional" />
+                            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>{t.catalog.supplierSku}</label>
+                            <input name="supplier_sku" className="input" placeholder={t.catalog.optional} />
                         </div>
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>Product Name</label>
-                        <input name="name" className="input" required placeholder="Item Name" />
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>{t.catalog.productName}</label>
+                        <input name="name" className="input" required placeholder={t.catalog.itemNamePlaceholder} />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>Cost ($)</label>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>{t.catalog.cost}</label>
                         <input name="cost" type="number" step="0.01" className="input" placeholder="0.00" />
                     </div>
 
                     <div style={{ marginBottom: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>Description</label>
-                        <textarea name="description" className="input" rows={3} placeholder="Details..." />
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>{t.catalog.description}</label>
+                        <textarea name="description" className="input" rows={3} placeholder={t.catalog.detailsPlaceholder} />
                     </div>
 
                     {/* Simple Image URL input for now, or file upload? 
@@ -116,8 +118,8 @@ export default function CatalogPage() {
                     <ImageUploadField />
 
                     <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '2rem' }}>
-                        <button type="button" onClick={() => setShowModal(false)} className="btn" style={{ background: 'transparent', color: 'rgba(248,250,252,0.6)' }}>Cancel</button>
-                        <button type="submit" disabled={submitting} className="btn btn-primary">{submitting ? 'Saving...' : 'Save Product'}</button>
+                        <button type="button" onClick={() => setShowModal(false)} className="btn" style={{ background: 'transparent', color: 'rgba(248,250,252,0.6)' }}>{t.catalog.cancel}</button>
+                        <button type="submit" disabled={submitting} className="btn btn-primary">{submitting ? t.catalog.saving : t.catalog.save}</button>
                     </div>
                 </form>
             </div>
@@ -130,22 +132,22 @@ export default function CatalogPage() {
                 <div>
                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '0.5rem' }}>
                         <Link href="/inventory" className="btn" style={{ paddingLeft: 0, color: 'rgba(248,250,252,0.6)', padding: '0' }}>
-                            Inventory
+                            {t.catalog.backToInventory}
                         </Link>
                         <span style={{ opacity: 0.3 }}>/</span>
-                        <span style={{ opacity: 0.8 }}>Catalog</span>
+                        <span style={{ opacity: 0.8 }}>{t.sidebar.catalog}</span>
                     </div>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Supplier Catalog</h2>
+                    <h2 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.catalog.title}</h2>
                 </div>
                 <button onClick={() => setShowModal(true)} className="btn btn-primary">
-                    + Add Product
+                    {t.catalog.addProduct}
                 </button>
             </div>
 
             <div className="card" style={{ padding: '1.5rem', marginBottom: '2rem', display: 'flex', gap: '1rem' }}>
                 <input
                     className="input"
-                    placeholder="Search catalog..."
+                    placeholder={t.catalog.searchPlaceholder}
                     value={searchTerm}
                     onChange={e => setSearchTerm(e.target.value)}
                     style={{ flex: 1 }}
@@ -156,7 +158,7 @@ export default function CatalogPage() {
                     value={selectedSupplier}
                     onChange={e => setSelectedSupplier(e.target.value)}
                 >
-                    <option value="">All Suppliers</option>
+                    <option value="">{t.catalog.allSuppliers}</option>
                     {suppliers.map(s => (
                         <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
@@ -164,7 +166,7 @@ export default function CatalogPage() {
             </div>
 
             {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>Loading catalog...</div>
+                <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>{t.catalog.loading}</div>
             ) : (
                 <div className="grid-responsive" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                     {filteredProducts.map((p, i) => (
@@ -186,7 +188,7 @@ export default function CatalogPage() {
                             </div>
                             <div style={{ padding: '1.25rem', flex: 1, display: 'flex', flexDirection: 'column' }}>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginBottom: '0.25rem' }}>
-                                    {p.suppliers?.name || 'Unknown Supplier'}
+                                    {p.suppliers?.name || t.catalog.unknownSupplier}
                                 </div>
                                 <h3 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem' }}>{p.name}</h3>
                                 {p.supplier_sku && (
@@ -204,7 +206,7 @@ export default function CatalogPage() {
                     ))}
                     {filteredProducts.length === 0 && (
                         <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '4rem', opacity: 0.5 }}>
-                            No products found.
+                            {t.catalog.noProducts}
                         </div>
                     )}
                 </div>
@@ -216,6 +218,7 @@ export default function CatalogPage() {
 }
 
 function ImageUploadField() {
+    const { t } = useTranslation()
     const [uploading, setUploading] = useState(false)
     const [imageUrl, setImageUrl] = useState('')
 
@@ -247,7 +250,7 @@ function ImageUploadField() {
             setImageUrl(publicUrl)
         } catch (error) {
             console.error(error)
-            alert('Error uploading image')
+            alert(t.catalog.errorUploading)
         } finally {
             setUploading(false)
         }
@@ -255,7 +258,7 @@ function ImageUploadField() {
 
     return (
         <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>Image</label>
+            <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'rgba(248,250,252,0.7)' }}>{t.catalog.image}</label>
             <input type="hidden" name="image_url" value={imageUrl} />
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -274,7 +277,7 @@ function ImageUploadField() {
                         style={{ fontSize: '0.8rem' }}
                         disabled={uploading}
                     />
-                    {uploading && <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>Uploading...</div>}
+                    {uploading && <div style={{ fontSize: '0.75rem', opacity: 0.7 }}>{t.catalog.uploading}</div>}
                 </div>
             </div>
         </div>
