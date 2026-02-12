@@ -87,7 +87,14 @@ export default function SuppliersPage() {
                                 <tr key={s.id} style={{ animation: `fadeIn 0.3s ease-out ${i * 0.05}s forwards`, opacity: 0 }}>
                                     <td style={{ fontWeight: 500, color: 'var(--foreground)' }}>{s.name}</td>
                                     <td style={{ opacity: 0.8, whiteSpace: 'pre-line' }}>{s.contact_info}</td>
-                                    <td style={{ textAlign: 'right' }}>
+                                    <td style={{ textAlign: 'right', display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
+                                        <Link
+                                            href={`/inventory/catalog?supplier_id=${s.id}`}
+                                            className="btn"
+                                            style={{ padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: 'rgba(255,255,255,0.05)' }}
+                                        >
+                                            Catalog
+                                        </Link>
                                         <button
                                             onClick={() => handleDelete(s.id)}
                                             className="btn"

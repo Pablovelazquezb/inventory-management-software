@@ -682,3 +682,67 @@ export async function receivePurchaseItems(
     return { success: true }
 }
 
+// CATALOG ACTIONS
+
+export async function createCatalogItem(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const supplierId = formData.get('supplier_id') as string
+    const name = formData.get('name') as string
+    const supplierSku = formData.get('supplier_sku') as string
+    const cost = parseFloat(formData.get('cost') as string)
+    const description = formData.get('description') as string
+    const imageUrl = formData.get('image_url') as string
+
+    if (!supplierId || !name) return { error: 'Supplier and Name are required' }
+
+    const { error } = await supabase.from('supplier_products').insert({
+        supplier_id: supplierId,
+        name,
+        supplier_sku: supplierSku || null,
+        cost: isNaN(cost) ? null : cost,
+        description: description || null,
+        image_url: imageUrl || null
+    })
+
+    if (error) return { error: error.message }
+    revalidatePath(`/inventory/suppliers/${supplierId}`)
+    revalidatePath('/inventory/catalog')
+    return { success: true }
+}
+
+export async function updateCatalogItem(id: string, prevState: any, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const name = formData.get('name') as string
+    const supplierSku = formData.get('supplier_sku') as string
+    const cost = parseFloat(formData.get('cost') as string)
+    const description = formData.get('description') as string
+    const imageUrl = formData.get('image_url') as string
+
+    const { error } = await supabase.from('supplier_products').update({
+        name,
+        supplier_sku: supplierSku || null,
+        cost: isNaN(cost) ? null : cost,
+        description: description || null,
+        image_url: imageUrl || null,
+        updated_at: new Date().toISOString()
+    }).eq('id', id)
+
+    if (error) return { error: error.message }
+    revalidatePath('/inventory/catalog')
+    return { success: true }
+}
+
+export async function deleteCatalogItem(id: string) {
+    const supabase = await createClient()
+    const { error } = await supabase.from('supplier_products').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    revalidatePath('/inventory/catalog')
+}
+
+

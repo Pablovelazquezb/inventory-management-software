@@ -37,6 +37,7 @@ interface InventoryItem {
     unit_type: string
     sku?: string | null
     subcategories?: { name: string } | null
+    image_url?: string | null
 }
 
 export default function InventoryList({ initialItems }: { initialItems: InventoryItem[] }) {
@@ -200,13 +201,21 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                 return (
                                                     <div key={item.id} style={{
                                                         display: 'grid',
-                                                        gridTemplateColumns: 'minmax(200px, 2fr) 1.5fr 1fr 1fr auto',
+                                                        gridTemplateColumns: 'minmax(200px, 2fr) 1.5fr 1fr auto',
                                                         padding: '1rem 1.25rem',
                                                         alignItems: 'center',
                                                         borderBottom: isLastItem ? 'none' : '1px solid var(--border)',
                                                         background: 'transparent'
                                                     }} className="hover-bg">
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.5rem' }}>
+                                                            {/* Image Thumbnail */}
+                                                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                                {item.image_url ? (
+                                                                    <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                                ) : (
+                                                                    <span style={{ fontSize: '1rem', opacity: 0.2 }}>📦</span>
+                                                                )}
+                                                            </div>
                                                             <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                                 <span style={{ fontWeight: 500, fontSize: '0.95rem' }}>{item.name}</span>
                                                                 {item.sku && (
@@ -215,7 +224,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                             </div>
                                                         </div>
 
-                                                        {/* --- Remaining Item Columns (Weight, Qty, Price, Actions) --- */}
+                                                        {/* --- Remaining Item Columns (Weight, Qty, Actions) --- */}
                                                         <div style={{ opacity: 0.6, fontSize: '0.875rem' }}>
                                                             {editingId === item.id ? (
                                                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -251,10 +260,6 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                             }}>
                                                                 {item.quantity} <span style={{ fontSize: '0.85em', opacity: 0.8 }}>{item.unit_type === 'kg' ? 'kg' : 'units'}</span>
                                                             </span>
-                                                        </div>
-
-                                                        <div style={{ fontWeight: 500, fontSize: '0.9rem' }}>
-                                                            ${item.price}
                                                         </div>
 
                                                         <div style={{ display: 'flex', gap: '0.5rem' }}>

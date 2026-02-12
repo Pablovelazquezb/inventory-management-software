@@ -27,6 +27,46 @@ export default function NewPurchasePage() {
     const [quantity, setQuantity] = useState(1)
     const [cost, setCost] = useState(0)
 
+    // Recommendations State
+    const [recommendations, setRecommendations] = useState<any[]>([])
+
+    useEffect(() => {
+        if (supplierId) {
+            const fetchCatalog = async () => {
+                const supabase = createClient()
+                const { data } = await supabase
+                    .from('supplier_products')
+                    .select('*')
+                    .eq('supplier_id', supplierId)
+
+                if (data) setRecommendations(data)
+            }
+            fetchCatalog()
+        } else {
+            setRecommendations([])
+        }
+    }, [supplierId])
+
+    const handleRecommendationClick = (rec: any) => {
+        // Find matching inventory item by name
+        const match = inventoryItems.find(i => i.name.toLowerCase() === rec.name.toLowerCase())
+
+        if (match) {
+            setSelectedItem(match.id)
+            setCost(rec.cost || 0)
+            setQuantity(1)
+            // Optional: Scroll to add form or highlight it
+            const formElement = document.getElementById('add-item-form')
+            if (formElement) formElement.scrollIntoView({ behavior: 'smooth' })
+        } else {
+            if (confirm(`Item "${rec.name}" not found in your inventory. Create it first?`)) {
+                // Logic to redirect to create item or open modal? 
+                // For now just alert or redirect
+                router.push(`/inventory/add?name=${encodeURIComponent(rec.name)}&image=${encodeURIComponent(rec.image_url || '')}`)
+            }
+        }
+    }
+
     useEffect(() => {
         const loadData = async () => {
             const supabase = createClient()
@@ -173,8 +213,46 @@ export default function NewPurchasePage() {
                     </div>
                 </div>
 
+                {/* Recommendations Carousel */}
+                {recommendations.length > 0 && (
+                    <div style={{ marginBottom: '2rem' }}>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', opacity: 0.7 }}>Recommended from Catalog</label>
+                        <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '1rem' }} className="scrollbar-hide">
+                            {recommendations.map(rec => (
+                                <div
+                                    key={rec.id}
+                                    onClick={() => handleRecommendationClick(rec)}
+                                    className="hover-scale"
+                                    style={{
+                                        minWidth: '160px',
+                                        padding: '1rem',
+                                        background: 'rgba(255,255,255,0.03)',
+                                        borderRadius: '8px',
+                                        border: '1px solid var(--border)',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.5rem'
+                                    }}
+                                >
+                                    <div style={{ height: '80px', background: 'rgba(0,0,0,0.2)', borderRadius: '4px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        {rec.image_url ? (
+                                            <img src={rec.image_url} alt={rec.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        ) : (
+                                            <span style={{ fontSize: '1.5rem', opacity: 0.3 }}>📦</span>
+                                        )}
+                                    </div>
+                                    <div style={{ fontSize: '0.9rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{rec.name}</div>
+                                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>${rec.cost?.toFixed(2) ?? '0.00'}</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Add Item Form */}
-                <div style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+                <div id="add-item-form" style={{ background: 'rgba(255,255,255,0.03)', padding: '1.5rem', borderRadius: '8px', marginBottom: '2rem' }}>
+
                     <h3 style={{ marginTop: 0, fontSize: '1.1rem' }}>Add Items</h3>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
                         <div style={{ flex: 2 }}>

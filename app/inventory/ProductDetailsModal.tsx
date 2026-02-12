@@ -169,10 +169,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                     padding: '1.5rem',
                     borderRadius: '12px'
                 }}>
-                    <div>
-                        <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.25rem' }}>Price</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>${item.price}</div>
-                    </div>
+
                     <div>
                         <div style={{ fontSize: '0.75rem', opacity: 0.6, marginBottom: '0.25rem' }}>Stock</div>
                         <div style={{ fontSize: '1.25rem', fontWeight: 600 }}>

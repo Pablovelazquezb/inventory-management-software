@@ -22,7 +22,7 @@ export default async function DashboardLayout({
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--background)' }}>
-            <Sidebar />
+            <Sidebar user={user} />
 
             {/* Main Content */}
             <main style={{ flex: 1, padding: '2rem' }}>
