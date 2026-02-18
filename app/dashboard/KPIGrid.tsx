@@ -5,17 +5,19 @@ import { useTranslation } from '@/hooks/useTranslation'
 
 interface KPIGridProps {
     totalRevenue: number
+    netRevenue: number
+    totalTax: number
     totalItemsSold: number
     totalSalesCount: number
     totalStockEntries: number
 }
 
-export default function KPIGrid({ totalRevenue, totalItemsSold, totalSalesCount, totalStockEntries }: KPIGridProps) {
+export default function KPIGrid({ totalRevenue, netRevenue, totalTax, totalItemsSold, totalSalesCount, totalStockEntries }: KPIGridProps) {
     const { t } = useTranslation()
 
     return (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-            {/* Revenue Card */}
+            {/* Revenue Card (Gross) */}
             <div className="card" style={{ padding: '1.5rem', position: 'relative', overflow: 'hidden', background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(6, 182, 212, 0.05))', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
                 <div style={{ position: 'absolute', top: 0, right: 0, padding: '1.5rem', opacity: 0.1, color: 'var(--success)' }}>
                     <svg width="80" height="80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -23,13 +25,20 @@ export default function KPIGrid({ totalRevenue, totalItemsSold, totalSalesCount,
                     </svg>
                 </div>
                 <div style={{ fontSize: '0.875rem', opacity: 0.8, marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--success)' }}>
-                    {t.dashboard.totalRevenue}
+                    Total Revenue (Gross)
                 </div>
-                <div style={{ fontSize: '3rem', fontWeight: 700, background: 'var(--success-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                <div style={{ fontSize: '2.5rem', fontWeight: 700, background: 'var(--success-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     ${totalRevenue.toLocaleString()}
                 </div>
-                <div style={{ fontSize: '0.85rem', opacity: 0.6, marginTop: '0.5rem' }}>
-                    {t.dashboard.allTimeIncome}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '1rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Net Sales</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>${netRevenue.toLocaleString()}</div>
+                    </div>
+                    <div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Tax Collected</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f59e0b' }}>${totalTax.toLocaleString()}</div>
+                    </div>
                 </div>
             </div>
 
@@ -43,7 +52,7 @@ export default function KPIGrid({ totalRevenue, totalItemsSold, totalSalesCount,
                 <div style={{ fontSize: '0.875rem', opacity: 0.8, marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8b5cf6' }}>
                     {t.dashboard.itemsSold}
                 </div>
-                <div style={{ fontSize: '3rem', fontWeight: 700, color: '#f8fafc' }}>
+                <div style={{ fontSize: '3rem', fontWeight: 700, color: 'var(--foreground)' }}>
                     {totalItemsSold.toLocaleString()}
                 </div>
                 <div style={{ fontSize: '0.85rem', opacity: 0.6, marginTop: '0.5rem' }}>

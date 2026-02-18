@@ -79,7 +79,7 @@ export default function EditItemForm({ item, categories, subcategories }: { item
 
                 {/* Header with Image Upload */}
                 <div style={{ display: 'flex', gap: '2rem', alignItems: 'start', marginBottom: '1rem' }}>
-                    <div style={{ width: '120px', height: '120px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.02)' }}>
+                    <div style={{ width: '120px', height: '120px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'var(--surface-highlight)' }}>
                         {uploading ? (
                             <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{t.inventory.uploading}</span>
                         ) : imageUrl ? (

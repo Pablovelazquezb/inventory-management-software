@@ -44,6 +44,7 @@ export default function Sidebar({ user }: { user: any }) {
             subItems: [
                 { label: t.sidebar.newSale, href: '/inventory/sell' },
                 { label: t.sidebar.salesHistory, href: '/inventory/sales' },
+                { label: t.purchases.customersTitle || 'Customers', href: '/inventory/customers' },
             ]
         },
         {
@@ -147,10 +148,10 @@ export default function Sidebar({ user }: { user: any }) {
                                                             display: 'block',
                                                             padding: '0.5rem 0.75rem',
                                                             borderRadius: '6px',
-                                                            color: isActive(sub.href, (sub as any).exact) ? 'var(--primary)' : 'rgba(255,255,255,0.6)',
+                                                            color: isActive(sub.href, (sub as any).exact) ? 'var(--primary)' : 'var(--text-muted)',
                                                             fontSize: '0.9rem',
                                                             fontWeight: isActive(sub.href, (sub as any).exact) ? 600 : 400,
-                                                            background: isActive(sub.href, (sub as any).exact) ? 'rgba(var(--primary-rgb), 0.1)' : 'transparent',
+                                                            background: isActive(sub.href, (sub as any).exact) ? 'var(--active-item-bg)' : 'transparent',
                                                             transition: 'all 0.2s'
                                                         }}
                                                     >
@@ -170,9 +171,9 @@ export default function Sidebar({ user }: { user: any }) {
                                         gap: '0.75rem',
                                         padding: '0.75rem 1rem',
                                         borderRadius: '8px',
-                                        color: isActive(item.href!) ? 'var(--foreground)' : 'rgba(255,255,255,0.8)',
+                                        color: isActive(item.href!) ? 'var(--foreground)' : 'var(--text-muted)',
                                         fontWeight: 500,
-                                        background: isActive(item.href!) ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                        background: isActive(item.href!) ? 'var(--active-item-bg)' : 'transparent',
                                         transition: 'all 0.2s'
                                     }}
                                 >
@@ -186,7 +187,7 @@ export default function Sidebar({ user }: { user: any }) {
             </nav>
 
             <div style={{ marginTop: 'auto', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
-                <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.5)', marginBottom: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                     {user?.email}
                 </div>
                 <form action="/auth/signout" method="post">

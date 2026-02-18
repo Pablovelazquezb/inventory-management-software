@@ -12,7 +12,7 @@ export default async function SalesPage() {
 
     const { data: sales } = await supabase
         .from('sales')
-        .select('*')
+        .select('*, customers(name)')
         .order('sold_at', { ascending: false })
 
     return (

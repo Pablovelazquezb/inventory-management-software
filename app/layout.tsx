@@ -2,6 +2,7 @@ import './globals.css'
 import type { Metadata } from 'next'
 
 import { LanguageProvider } from '@/hooks/useTranslation'
+import { ThemeProvider } from '@/context/ThemeContext'
 
 export const metadata: Metadata = {
   title: 'Inventory Management',
@@ -17,7 +18,9 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <LanguageProvider>
-          {children}
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
         </LanguageProvider>
       </body>
     </html>

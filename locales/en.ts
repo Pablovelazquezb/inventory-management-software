@@ -19,9 +19,12 @@ export const en = {
         addItem: "Add Item",
     },
     settings: {
-        title: "Settings",
-        language: "Language",
-        selectLanguage: "Select your preferred language",
+        title: 'Settings',
+        language: 'Language',
+        selectLanguage: 'Customize your experience.',
+        theme: 'Interface Theme',
+        light: 'Light Mode',
+        dark: 'Dark Mode',
         save: "Save",
     },
     dashboard: {
@@ -143,19 +146,37 @@ export const en = {
         unknown: "Unknown",
         // Suppliers
         suppliersTitle: "Suppliers",
-        addSupplier: "+ Add Supplier",
+        addSupplier: "Add Supplier",
         name: "Name",
         contactInfo: "Contact Info",
         catalog: "Catalog",
         delete: "Delete",
         confirmDeleteSupplier: "Are you sure you want to delete this supplier?",
-        noSuppliers: "No suppliers added yet.",
+        noSuppliers: "No suppliers found",
         loadingSuppliers: "Loading suppliers...",
         vendorNamePlaceholder: "Vendor Name",
-        contactPlaceholder: "Phone, Email, Address...",
-        cancel: "Cancel",
+        contactPlaceholder: "Contact Info",
         saveSupplier: "Save Supplier",
         saving: "Saving...",
+        cancel: "Cancel",
+
+        // Extended Fields
+        rfc: "RFC",
+        legalName: "Legal Name",
+        address: "Address",
+        email: "Email",
+        phone: "Phone",
+        notes: "Notes",
+
+        // Customers
+        customersTitle: "Customers",
+        addCustomer: "Add Customer",
+        saveCustomer: "Save Customer",
+        confirmDeleteCustomer: "Are you sure you want to delete this customer?",
+        noCustomers: "No customers found",
+        loadingCustomers: "Loading customers...",
+        customerNamePlaceholder: "Customer Name",
+
         // New Purchase
         newOrderTitle: "New Purchase Order",
         selectSupplier: "Select Supplier...",
@@ -167,7 +188,7 @@ export const en = {
         pending: "Pending",
         partial: "Partial",
         paid: "Paid",
-        notes: "Notes",
+        // notes removed (duplicate)
         notesPlaceholder: "Optional notes...",
         recommended: "Recommended from Catalog",
         addItems: "Add Items",

@@ -1,10 +1,12 @@
 'use client'
 
 import { useTranslation } from '@/hooks/useTranslation'
+import { useTheme } from '@/context/ThemeContext'
 import { useState, useEffect } from 'react'
 
 export default function SettingsPage() {
     const { language, setLanguage, t } = useTranslation()
+    const { theme, setTheme } = useTheme()
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
@@ -33,16 +35,52 @@ export default function SettingsPage() {
                         <button
                             onClick={() => setLanguage('es')}
                             className={`btn ${language === 'es' ? 'btn-primary' : 'btn-secondary'}`}
-                            style={{ flex: 1, padding: '1rem', justifyContent: 'center' }}
+                            style={{ flex: 1, padding: '1rem', justifyContent: 'center', opacity: language === 'es' ? 1 : 0.5 }}
                         >
                             🇪🇸 Español
                         </button>
                         <button
                             onClick={() => setLanguage('en')}
                             className={`btn ${language === 'en' ? 'btn-primary' : 'btn-secondary'}`}
-                            style={{ flex: 1, padding: '1rem', justifyContent: 'center' }}
+                            style={{ flex: 1, padding: '1rem', justifyContent: 'center', opacity: language === 'en' ? 1 : 0.5 }}
                         >
                             🇺🇸 English
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                        {t.settings.theme}
+                    </label>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button
+                            onClick={() => setTheme('light')}
+                            className={`btn`}
+                            style={{
+                                flex: 1,
+                                padding: '1rem',
+                                justifyContent: 'center',
+                                background: theme === 'light' ? 'var(--surface-highlight)' : 'transparent',
+                                border: theme === 'light' ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                color: theme === 'light' ? 'var(--foreground)' : 'var(--text-muted)'
+                            }}
+                        >
+                            ☀️ {t.settings.light}
+                        </button>
+                        <button
+                            onClick={() => setTheme('dark')}
+                            className={`btn`}
+                            style={{
+                                flex: 1,
+                                padding: '1rem',
+                                justifyContent: 'center',
+                                background: theme === 'dark' ? 'var(--surface-highlight)' : 'transparent',
+                                border: theme === 'dark' ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                color: theme === 'dark' ? 'var(--foreground)' : 'var(--text-muted)'
+                            }}
+                        >
+                            🌙 {t.settings.dark}
                         </button>
                     </div>
                 </div>

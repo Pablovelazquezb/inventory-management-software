@@ -102,7 +102,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                         background: 'none',
                         border: 'none',
                         fontSize: '1.5rem',
-                        color: 'rgba(255,255,255,0.5)',
+                        color: 'var(--text-muted)',
                         cursor: 'pointer'
                     }}
                 >
@@ -112,7 +112,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                 {/* Header */}
                 <div style={{ marginBottom: '2rem', paddingRight: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'start' }}>
                     {/* Image */}
-                    <div style={{ width: '120px', height: '120px', borderRadius: '16px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0, border: '1px solid var(--border)' }}>
+                    <div style={{ width: '120px', height: '120px', borderRadius: '16px', overflow: 'hidden', background: 'var(--surface-highlight)', flexShrink: 0, border: '1px solid var(--border)' }}>
                         {item.image_url ? (
                             <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
@@ -167,7 +167,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                     gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                     gap: '1rem',
                     marginBottom: '2rem',
-                    background: 'rgba(255,255,255,0.03)',
+                    background: 'var(--surface-highlight)',
                     padding: '1.5rem',
                     borderRadius: '12px'
                 }}>
@@ -208,7 +208,7 @@ export default function ProductDetailsModal({ item, onClose }: ProductDetailsMod
                                     justifyContent: 'space-between',
                                     alignItems: 'center',
                                     padding: '0.75rem',
-                                    background: 'rgba(255,255,255,0.02)',
+                                    background: 'var(--surface-highlight)',
                                     borderRadius: '8px',
                                     borderLeft: `3px solid ${h.type === 'sale' ? 'var(--error)' : 'var(--success)'}`
                                 }}>

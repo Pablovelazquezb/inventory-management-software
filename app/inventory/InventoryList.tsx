@@ -144,8 +144,8 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                             </h2>
                             <span style={{
                                 fontSize: '0.75rem', padding: '0.2rem 0.6rem',
-                                borderRadius: '99px', background: 'rgba(255,255,255,0.05)',
-                                color: 'rgba(255,255,255,0.6)'
+                                borderRadius: '99px', background: 'var(--surface-highlight)',
+                                color: 'var(--text-muted)'
                             }}>
                                 {count} {t.inventory.itemsCount}
                             </span>
@@ -167,7 +167,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                 style={{
                                                     display: 'flex', alignItems: 'center', gap: '0.75rem',
                                                     width: '100%', padding: '0.75rem 1.25rem',
-                                                    background: 'rgba(255,255,255,0.02)',
+                                                    background: 'var(--surface-highlight)',
                                                     border: 'none', borderBottom: !isSubCollapsed ? '1px solid var(--border)' : 'none',
                                                     cursor: 'pointer', textAlign: 'left', color: 'inherit',
                                                     fontSize: '0.9rem', fontWeight: 500
@@ -198,7 +198,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                     }} className="hover-bg">
                                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', paddingLeft: '1.5rem' }}>
                                                             {/* Image Thumbnail */}
-                                                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: 'rgba(255,255,255,0.05)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', overflow: 'hidden', background: 'var(--surface-highlight)', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                                 {item.image_url ? (
                                                                     <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                                 ) : (
@@ -222,7 +222,7 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                                         value={editWeight}
                                                                         onChange={e => setEditWeight(e.target.value)}
                                                                         onClick={(e) => e.stopPropagation()}
-                                                                        style={{ width: '80px', padding: '4px', background: 'var(--background)', border: '1px solid var(--primary)', color: 'white', borderRadius: '4px' }}
+                                                                        style={{ width: '80px', padding: '4px', background: 'var(--background)', border: '1px solid var(--primary)', color: 'var(--foreground)', borderRadius: '4px' }}
                                                                     />
                                                                     <button onClick={() => saveWeight(item.id)} style={{ color: 'var(--success)', cursor: 'pointer', border: 'none', background: 'none' }}>✓</button>
                                                                     <button onClick={() => setEditingId(null)} style={{ color: 'var(--error)', cursor: 'pointer', border: 'none', background: 'none' }}>✕</button>
@@ -255,11 +255,11 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                                             <button
                                                                 className="btn"
                                                                 onClick={() => setSelectedItem(item)}
-                                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)' }}
+                                                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'var(--surface-highlight)', color: 'var(--foreground)' }}
                                                             >
                                                                 {t.inventory.view}
                                                             </button>
-                                                            <Link href={`/inventory/edit/${item.id}`} className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'rgba(255,255,255,0.05)' }}>
+                                                            <Link href={`/inventory/edit/${item.id}`} className="btn" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', background: 'var(--surface-highlight)', color: 'var(--foreground)' }}>
                                                                 {t.inventory.edit}
                                                             </Link>
                                                         </div>

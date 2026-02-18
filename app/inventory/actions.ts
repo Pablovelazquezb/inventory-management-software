@@ -417,7 +417,9 @@ export async function createBatchItems(prevState: any, formData: FormData) {
 export async function sellBatchItems(
     cartItems: { id: string; quantity: number; price: number }[],
     note?: string,
-    invoice_url?: string
+    invoice_url?: string,
+    customerId?: string,
+    taxes: any[] = []
 ) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -475,10 +477,22 @@ export async function sellBatchItems(
             item_name: dbItem.name,
             quantity: cartItem.quantity,
             price_per_unit: cartItem.price, // Uses the custom price from cart
-            total_price: cartItem.price * cartItem.quantity,
+            total_price: cartItem.price * cartItem.quantity, // This might need adjustment if total_price should include tax per item?
+            // Usually total_price for a line item is (price * qty). The Taxes are often stored on the sale level if they apply to the whole sale, 
+            // OR we store a derived tax amount per item if needed. 
+            // BUT here we interpret 'taxes' as applying to the whole transaction proportionally or just storing the metadata.
+            // However, the `sales` table structure in this app is: 1 row per sold item.
+            // So if I have 10 items, I have 10 rows. 
+            // The `taxes` array should probably be stored in EACH row, or we need a `sale_batches` table (which we don't have yet).
+            // For now, storing the taxes configuration in each row is acceptable for this scale.
             user_id: user.id,
             note,
-            invoice_url
+            invoice_url,
+            customer_id: customerId || null,
+            taxes: JSON.stringify(taxes),
+            tax_rate: taxes.reduce((sum, t) => sum + (t.rate || 0), 0),
+            // Calculate tax amount for this specific item line
+            tax_amount: (cartItem.price * cartItem.quantity) * taxes.reduce((sum, t) => sum + (t.rate || 0), 0)
         })
 
         if (saleError) {
@@ -507,12 +521,24 @@ export async function createSupplier(prevState: any, formData: FormData) {
 
     const name = formData.get('name') as string
     const contactInfo = formData.get('contact_info') as string
+    const rfc = formData.get('rfc') as string
+    const address = formData.get('address') as string
+    const legalName = formData.get('legal_name') as string
+    const email = formData.get('email') as string
+    const phone = formData.get('phone') as string
+    const notes = formData.get('notes') as string
 
     if (!name || name.trim() === '') return { error: 'Supplier name is required' }
 
     const { error } = await supabase.from('suppliers').insert({
         name,
-        contact_info: contactInfo
+        contact_info: contactInfo,
+        rfc,
+        address,
+        legal_name: legalName,
+        email,
+        phone,
+        notes
     })
 
     if (error) return { error: error.message }
@@ -530,12 +556,25 @@ export async function updateSupplier(id: string, prevState: any, formData: FormD
 
     const name = formData.get('name') as string
     const contactInfo = formData.get('contact_info') as string
+    const rfc = formData.get('rfc') as string
+    const address = formData.get('address') as string
+    const legalName = formData.get('legal_name') as string
+    const email = formData.get('email') as string
+    const phone = formData.get('phone') as string
+    const notes = formData.get('notes') as string
 
     if (!name || name.trim() === '') return { error: 'Supplier name is required' }
 
     const { error } = await supabase.from('suppliers').update({
         name,
-        contact_info: contactInfo
+        contact_info: contactInfo,
+        rfc,
+        address,
+        legal_name: legalName,
+        email,
+        phone,
+        notes,
+        updated_at: new Date().toISOString()
     }).eq('id', id)
 
     if (error) return { error: error.message }
@@ -561,7 +600,8 @@ export async function createPurchase(
     documentUrl?: string,
     taxRate: number = 0,
     paymentStatus: string = 'pending',
-    notes: string = ''
+    notes: string = '',
+    taxes: any[] = []
 ) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -582,7 +622,8 @@ export async function createPurchase(
             status: 'ordered',
             tax_rate: taxRate,
             payment_status: paymentStatus,
-            notes: notes
+            notes: notes,
+            taxes: JSON.stringify(taxes)
         })
         .select()
         .single()
@@ -746,3 +787,76 @@ export async function deleteCatalogItem(id: string) {
 }
 
 
+
+// CUSTOMER ACTIONS
+
+export async function createCustomer(prevState: any, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) return { error: 'Unauthorized' }
+
+    const name = formData.get('name') as string
+    const email = formData.get('email') as string
+    const phone = formData.get('phone') as string
+    const rfc = formData.get('rfc') as string
+    const address = formData.get('address') as string
+    const legalName = formData.get('legal_name') as string
+    const notes = formData.get('notes') as string
+
+    if (!name || name.trim() === '') return { error: 'Customer name is required' }
+
+    const { error } = await supabase.from('customers').insert({
+        name,
+        email,
+        phone,
+        rfc,
+        address,
+        legal_name: legalName,
+        notes
+    })
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/inventory/customers')
+    return { success: true }
+}
+
+export async function updateCustomer(id: string, prevState: any, formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'Unauthorized' }
+
+    const name = formData.get('name') as string
+    const email = formData.get('email') as string
+    const phone = formData.get('phone') as string
+    const rfc = formData.get('rfc') as string
+    const address = formData.get('address') as string
+    const legalName = formData.get('legal_name') as string
+    const notes = formData.get('notes') as string
+
+    if (!name || name.trim() === '') return { error: 'Customer name is required' }
+
+    const { error } = await supabase.from('customers').update({
+        name,
+        email,
+        phone,
+        rfc,
+        address,
+        legal_name: legalName,
+        notes,
+        updated_at: new Date().toISOString()
+    }).eq('id', id)
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/inventory/customers')
+    return { success: true }
+}
+
+export async function deleteCustomer(id: string) {
+    const supabase = await createClient()
+    const { error } = await supabase.from('customers').delete().eq('id', id)
+    if (error) throw new Error(error.message)
+    revalidatePath('/inventory/customers')
+}

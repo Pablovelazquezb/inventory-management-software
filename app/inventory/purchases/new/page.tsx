@@ -17,7 +17,12 @@ export default function NewPurchasePage() {
     // Form State
     const [supplierId, setSupplierId] = useState('')
     const [expectedDate, setExpectedDate] = useState('')
-    const [taxEnabled, setTaxEnabled] = useState(false)
+    // Tax State
+    const [ivaEnabled, setIvaEnabled] = useState(true)
+    const [otherTaxes, setOtherTaxes] = useState<{ id: string, name: string, rate: number }[]>([])
+    const [showAddTax, setShowAddTax] = useState(false)
+    const [newTax, setNewTax] = useState({ name: 'IEPS', rate: 8 })
+
     const [paymentStatus, setPaymentStatus] = useState('pending')
     const [notes, setNotes] = useState('')
 
@@ -108,25 +113,50 @@ export default function NewPurchasePage() {
         setCart(newCart)
     }
 
+    const addTax = () => {
+        if (!newTax.name || newTax.rate <= 0) return
+        setOtherTaxes([...otherTaxes, { id: Math.random().toString(), name: newTax.name, rate: newTax.rate }])
+        setShowAddTax(false)
+        setNewTax({ name: 'IEPS', rate: 8 })
+    }
+
+    const removeTax = (id: string) => {
+        setOtherTaxes(otherTaxes.filter(t => t.id !== id))
+    }
+
     const subtotal = cart.reduce((sum, item) => sum + (item.quantity * item.cost), 0)
-    const taxRate = taxEnabled ? 0.16 : 0
-    const taxAmount = subtotal * taxRate
-    const totalAmount = subtotal + taxAmount
+
+    // Tax Calcs
+    const ivaRate = 0.16
+    const ivaAmount = ivaEnabled ? subtotal * ivaRate : 0
+    const otherTaxesAmount = otherTaxes.reduce((sum, t) => sum + (subtotal * (t.rate / 100)), 0)
+    const totalTaxAmount = ivaAmount + otherTaxesAmount
+
+    const totalAmount = subtotal + totalTaxAmount
 
     const handleSubmit = async () => {
         if (!supplierId) return alert(t.purchases.selectSupplierAlert)
         if (cart.length === 0) return alert(t.purchases.emptyOrderAlert)
 
         setSubmitting(true)
+        setSubmitting(true)
+
+        // Compile Taxes
+        const activeTaxes = []
+        if (ivaEnabled) activeTaxes.push({ name: 'IVA', rate: 0.16 })
+        otherTaxes.forEach(t => activeTaxes.push({ name: t.name, rate: t.rate / 100 }))
+        const totalTaxRate = activeTaxes.reduce((sum, t) => sum + t.rate, 0)
+
         const result = await createPurchase(
             supplierId,
             cart,
             totalAmount,
             expectedDate,
             undefined, // documentUrl
-            taxRate,
+            totalTaxRate, // taxRate sum
             paymentStatus,
-            notes
+            notes,
+            activeTaxes // taxes array
         )
         setSubmitting(false)
 
@@ -180,16 +210,71 @@ export default function NewPurchasePage() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '1.5rem', marginBottom: '2rem' }}>
                     <div>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.iva}</label>
-                        <div style={{ display: 'flex', alignItems: 'center', height: '42px' }}>
-                            <input
-                                type="checkbox"
-                                checked={taxEnabled}
-                                onChange={(e) => setTaxEnabled(e.target.checked)}
-                                style={{ width: '20px', height: '20px' }}
-                            />
-                            <span style={{ marginLeft: '0.5rem', opacity: 0.7 }}>{t.purchases.applyTax}</span>
+                        <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>Taxes</label>
+                        <div style={{ marginBottom: '0.5rem' }}>
+                            <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.9rem', cursor: 'pointer' }}>
+                                <input
+                                    type="checkbox"
+                                    checked={ivaEnabled}
+                                    onChange={(e) => setIvaEnabled(e.target.checked)}
+                                    style={{ marginRight: '0.5rem' }}
+                                />
+                                {t.purchases.iva}
+                            </label>
                         </div>
+                        {otherTaxes.map(t => (
+                            <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', marginBottom: '0.5rem', paddingLeft: '1.5rem', background: 'rgba(255,255,255,0.02)', padding: '0.2rem 0.5rem', borderRadius: '4px' }}>
+                                <span>{t.name} ({t.rate}%)</span>
+                                <button onClick={() => removeTax(t.id)} style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                            </div>
+                        ))}
+
+                        {showAddTax ? (
+                            <div style={{ background: 'var(--surface-light)', padding: '0.5rem', borderRadius: '4px', marginTop: '0.5rem' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                    <select
+                                        className="input"
+                                        style={{ padding: '0.2rem', fontSize: '0.8rem' }}
+                                        value={newTax.name}
+                                        onChange={e => setNewTax({ ...newTax, name: e.target.value })}
+                                    >
+                                        <option value="IEPS">IEPS</option>
+                                        <option value="ISR">ISR</option>
+                                        <option value="RETENTION">Retention</option>
+                                        <option value="OTHER">Other</option>
+                                    </select>
+                                    <input
+                                        type="number"
+                                        className="input"
+                                        placeholder="%"
+                                        style={{ width: '50px', padding: '0.2rem', fontSize: '0.8rem' }}
+                                        value={newTax.rate}
+                                        onChange={e => setNewTax({ ...newTax, rate: parseFloat(e.target.value) })}
+                                    />
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                    <button onClick={addTax} className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem' }}>Add</button>
+                                    <button onClick={() => setShowAddTax(false)} className="btn" style={{ fontSize: '0.8rem', padding: '0.2rem 0.5rem', background: 'transparent', border: '1px solid var(--border)' }}>Cancel</button>
+                                </div>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowAddTax(true)}
+                                style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--primary)',
+                                    fontSize: '0.8rem',
+                                    cursor: 'pointer',
+                                    paddingLeft: '1.5rem',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.2rem'
+                                }}
+                            >
+                                + Add Other Tax
+                            </button>
+                        )}
                     </div>
                     <div>
                         <label style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.purchases.paymentStatus}</label>
@@ -341,13 +426,20 @@ export default function NewPurchasePage() {
                             <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${subtotal.toFixed(2)}</td>
                             <td></td>
                         </tr>
-                        {taxEnabled && (
+                        {ivaEnabled && (
                             <tr>
                                 <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>{t.purchases.iva}:</td>
-                                <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${taxAmount.toFixed(2)}</td>
+                                <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${ivaAmount.toFixed(2)}</td>
                                 <td></td>
                             </tr>
                         )}
+                        {otherTaxes.map(t => (
+                            <tr key={t.id}>
+                                <td colSpan={3} style={{ padding: '0.5rem 1rem', textAlign: 'right', opacity: 0.7 }}>{t.name} ({t.rate}%):</td>
+                                <td style={{ padding: '0.5rem 1rem', textAlign: 'right' }}>${(subtotal * (t.rate / 100)).toFixed(2)}</td>
+                                <td></td>
+                            </tr>
+                        ))}
                         <tr>
                             <td colSpan={3} style={{ padding: '1rem', textAlign: 'right', fontWeight: 600 }}>{t.purchases.total}:</td>
                             <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 700, fontSize: '1.2rem', color: 'var(--primary)' }}>
