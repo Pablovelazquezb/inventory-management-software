@@ -287,21 +287,39 @@ export default function SellPage() {
                             </div>
                             <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
                                 <div style={{ fontWeight: 700 }}>${(item.price * item.quantity).toFixed(2)}</div>
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', gap: '0.375rem', alignItems: 'center' }}>
                                     <button
                                         onClick={() => updateCartItem(item.id, 'quantity', item.quantity - 1)}
-                                        style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--foreground)', cursor: 'pointer' }}
-                                    >-</button>
+                                        style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--foreground)', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}
+                                    >−</button>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={item.maxStock}
+                                        value={item.quantity}
+                                        onChange={e => {
+                                            const val = parseInt(e.target.value)
+                                            if (!isNaN(val) && val >= 1) updateCartItem(item.id, 'quantity', val)
+                                        }}
+                                        style={{
+                                            width: '52px', height: '26px',
+                                            textAlign: 'center', borderRadius: '6px',
+                                            border: '1px solid var(--border)',
+                                            background: 'var(--background)',
+                                            color: 'var(--foreground)',
+                                            fontSize: '0.875rem', fontWeight: 600,
+                                            padding: '0 0.25rem',
+                                        }}
+                                    />
                                     <button
                                         onClick={() => updateCartItem(item.id, 'quantity', item.quantity + 1)}
-                                        style={{ width: '24px', height: '24px', borderRadius: '4px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--foreground)', cursor: 'pointer' }}
+                                        style={{ width: '26px', height: '26px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--foreground)', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}
                                     >+</button>
                                     <button
                                         onClick={() => removeFromCart(item.id)}
-                                        style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: '0.5rem' }}
-                                    >x</button>
-                                </div>
-                            </div>
+                                        style={{ color: 'var(--error)', background: 'none', border: 'none', cursor: 'pointer', marginLeft: '0.25rem', fontSize: '1rem' }}
+                                    >×</button>
+                                </div>                   </div>
                         </div>
                     ))}
                     {cart.length === 0 && (
