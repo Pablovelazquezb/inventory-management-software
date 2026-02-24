@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
+import { getCurrentOrgId } from '@/utils/supabase/organization'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -8,10 +9,10 @@ export async function createItem(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'You must be logged in to create items' }
 
-    if (!user) {
-        return { error: 'You must be logged in to create items' }
-    }
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
 
     const name = formData.get('name') as string
     const category = formData.get('category') as string
@@ -24,25 +25,25 @@ export async function createItem(prevState: any, formData: FormData) {
 
     const { data: item, error: itemError } = await supabase.from('inventory_items').insert({
         name,
-        category, // keeping this for backward compat
+        category,
         subcategory_id: subcategoryId,
         quantity,
         price,
         weight,
         unit_type: unitType,
         description,
-        user_id: user.id
+        user_id: user.id,
+        organization_id: orgId
     }).select().single()
 
-    if (itemError) {
-        return { error: itemError.message }
-    }
+    if (itemError) return { error: itemError.message }
 
     // Record initial stock entry
     await supabase.from('stock_entries').insert({
         item_id: item.id,
         quantity_added: quantity,
-        user_id: user.id
+        user_id: user.id,
+        organization_id: orgId
     })
 
     revalidatePath('/inventory')
@@ -69,6 +70,9 @@ export async function sellItem(id: string, quantitySold: number, note?: string, 
 
     if (!user) return { error: 'Unauthorized' }
 
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
+
     if (quantitySold <= 0) return { error: 'Quantity must be greater than zero' }
 
     // Get item
@@ -76,6 +80,7 @@ export async function sellItem(id: string, quantitySold: number, note?: string, 
         .from('inventory_items')
         .select('*')
         .eq('id', id)
+        .eq('organization_id', orgId)
         .single()
 
     if (fetchError || !item) return { error: 'Item not found' }
@@ -99,6 +104,7 @@ export async function sellItem(id: string, quantitySold: number, note?: string, 
         price_per_unit: item.price,
         total_price: item.price * quantitySold,
         user_id: user.id,
+        organization_id: orgId,
         note,
         invoice_url
     })
@@ -115,6 +121,9 @@ export async function restockItem(id: string, quantityAdded: number, note?: stri
 
     if (!user) return { error: 'Unauthorized' }
 
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
+
     if (quantityAdded <= 0) return { error: 'Quantity must be greater than zero' }
 
     // Get item
@@ -122,6 +131,7 @@ export async function restockItem(id: string, quantityAdded: number, note?: stri
         .from('inventory_items')
         .select('quantity')
         .eq('id', id)
+        .eq('organization_id', orgId)
         .single()
 
     if (fetchError || !item) return { error: 'Item not found' }
@@ -139,6 +149,7 @@ export async function restockItem(id: string, quantityAdded: number, note?: stri
         item_id: id,
         quantity_added: quantityAdded,
         user_id: user.id,
+        organization_id: orgId,
         note
     })
 
@@ -150,25 +161,22 @@ export async function createSubcategory(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'You must be logged in to create subcategories' }
 
-    if (!user) {
-        return { error: 'You must be logged in to create subcategories' }
-    }
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
 
     const name = formData.get('name') as string
     const categoryId = formData.get('category_id') as string
 
-    if (!name || name.trim() === '') {
-        return { error: 'Subcategory name is required' }
-    }
-    if (!categoryId) {
-        return { error: 'Category ID is required' }
-    }
+    if (!name || name.trim() === '') return { error: 'Subcategory name is required' }
+    if (!categoryId) return { error: 'Category ID is required' }
 
     const { error } = await supabase.from('subcategories').insert({
         name,
         category_id: categoryId,
-        user_id: user.id
+        user_id: user.id,
+        organization_id: orgId
     })
 
     if (error) {
@@ -196,20 +204,18 @@ export async function createCategory(prevState: any, formData: FormData) {
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return { error: 'You must be logged in to create categories' }
 
-    if (!user) {
-        return { error: 'You must be logged in to create categories' }
-    }
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
 
     const name = formData.get('name') as string
-
-    if (!name || name.trim() === '') {
-        return { error: 'Category name is required' }
-    }
+    if (!name || name.trim() === '') return { error: 'Category name is required' }
 
     const { error } = await supabase.from('categories').insert({
         name,
-        user_id: user.id
+        user_id: user.id,
+        organization_id: orgId
     })
 
     if (error) {
@@ -347,7 +353,8 @@ export async function createBatchItems(prevState: any, formData: FormData) {
 
     if (!user) return { error: 'Unauthorized' }
 
-    // Common fields
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
 
     const category = formData.get('category') as string
     const subcategoryId = formData.get('subcategory_id') as string || null
@@ -367,10 +374,8 @@ export async function createBatchItems(prevState: any, formData: FormData) {
     if (!variants || variants.length === 0) return { error: 'No variants provided' }
 
     const itemsToInsert = variants.map(v => {
-        // Handle SKU: Use provided ID or generate default
         let sku = v.id && v.id.trim() !== '' ? v.id.trim() : null
         if (!sku) {
-            // Generate simple random SKU: ITEM-XXXXXX
             sku = `ITEM-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
         }
 
@@ -380,12 +385,13 @@ export async function createBatchItems(prevState: any, formData: FormData) {
             subcategory_id: subcategoryId,
             quantity: parseFloat(v.quantity) || 1,
             price: v.price ? parseFloat(v.price) : price,
-            sku: sku, // Save to new SKU column
+            sku: sku,
             weight: v.weight ? parseFloat(v.weight) : null,
             unit_type: unitType,
             description,
-            image_url: v.image_url || null, // Add image_url
-            user_id: user.id
+            image_url: v.image_url || null,
+            user_id: user.id,
+            organization_id: orgId
         }
     })
 
@@ -425,6 +431,10 @@ export async function sellBatchItems(
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user) return { error: 'Unauthorized' }
+
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
+
     if (!cartItems || cartItems.length === 0) return { error: 'No items in cart' }
 
     // Validate all items first
@@ -476,22 +486,15 @@ export async function sellBatchItems(
             item_id: cartItem.id,
             item_name: dbItem.name,
             quantity: cartItem.quantity,
-            price_per_unit: cartItem.price, // Uses the custom price from cart
-            total_price: cartItem.price * cartItem.quantity, // This might need adjustment if total_price should include tax per item?
-            // Usually total_price for a line item is (price * qty). The Taxes are often stored on the sale level if they apply to the whole sale, 
-            // OR we store a derived tax amount per item if needed. 
-            // BUT here we interpret 'taxes' as applying to the whole transaction proportionally or just storing the metadata.
-            // However, the `sales` table structure in this app is: 1 row per sold item.
-            // So if I have 10 items, I have 10 rows. 
-            // The `taxes` array should probably be stored in EACH row, or we need a `sale_batches` table (which we don't have yet).
-            // For now, storing the taxes configuration in each row is acceptable for this scale.
+            price_per_unit: cartItem.price,
+            total_price: cartItem.price * cartItem.quantity,
             user_id: user.id,
+            organization_id: orgId,
             note,
             invoice_url,
             customer_id: customerId || null,
             taxes: JSON.stringify(taxes),
             tax_rate: taxes.reduce((sum, t) => sum + (t.rate || 0), 0),
-            // Calculate tax amount for this specific item line
             tax_amount: (cartItem.price * cartItem.quantity) * taxes.reduce((sum, t) => sum + (t.rate || 0), 0)
         })
 
@@ -519,6 +522,9 @@ export async function createSupplier(prevState: any, formData: FormData) {
 
     if (!user) return { error: 'Unauthorized' }
 
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
+
     const name = formData.get('name') as string
     const contactInfo = formData.get('contact_info') as string
     const rfc = formData.get('rfc') as string
@@ -538,7 +544,8 @@ export async function createSupplier(prevState: any, formData: FormData) {
         legal_name: legalName,
         email,
         phone,
-        notes
+        notes,
+        organization_id: orgId
     })
 
     if (error) return { error: error.message }
@@ -608,6 +615,9 @@ export async function createPurchase(
 
     if (!user) return { error: 'Unauthorized' }
 
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
+
     if (!supplierId) return { error: 'Supplier is required' }
     if (!items || items.length === 0) return { error: 'No items in purchase order' }
 
@@ -623,7 +633,8 @@ export async function createPurchase(
             tax_rate: taxRate,
             payment_status: paymentStatus,
             notes: notes,
-            taxes: JSON.stringify(taxes)
+            taxes: JSON.stringify(taxes),
+            organization_id: orgId
         })
         .select()
         .single()
@@ -636,7 +647,8 @@ export async function createPurchase(
         item_id: item.itemId,
         quantity_ordered: item.quantity,
         cost_per_unit: item.cost,
-        quantity_received: 0
+        quantity_received: 0,
+        organization_id: orgId
     }))
 
     const { error: itemsError } = await supabase
@@ -730,6 +742,9 @@ export async function createCatalogItem(prevState: any, formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return { error: 'Unauthorized' }
 
+    let orgId: string
+    try { orgId = await getCurrentOrgId() } catch { return { error: 'No active organization' } }
+
     const supplierId = formData.get('supplier_id') as string
     const name = formData.get('name') as string
     const supplierSku = formData.get('supplier_sku') as string
@@ -745,7 +760,8 @@ export async function createCatalogItem(prevState: any, formData: FormData) {
         supplier_sku: supplierSku || null,
         cost: isNaN(cost) ? null : cost,
         description: description || null,
-        image_url: imageUrl || null
+        image_url: imageUrl || null,
+        organization_id: orgId
     })
 
     if (error) return { error: error.message }
