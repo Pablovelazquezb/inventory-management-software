@@ -1,14 +1,79 @@
 'use client'
 
-import { useState, useActionState } from 'react'
+import { useState } from 'react'
 import { useOrganization } from '@/context/OrganizationContext'
+import { useTranslation } from '@/hooks/useTranslation'
 
 interface Props {
     user: any
     orgs: any[]
 }
 
+// ── Role badge colors ──────────────────────────────────────────
+function RoleBadge({ role }: { role: string }) {
+    const colors: Record<string, { bg: string; color: string; border: string }> = {
+        owner: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
+        admin: { bg: 'rgba(99,102,241,0.12)', color: 'var(--primary)', border: 'rgba(99,102,241,0.3)' },
+        member: { bg: 'rgba(16,185,129,0.12)', color: '#22c55e', border: 'rgba(16,185,129,0.3)' },
+    }
+    const c = colors[role] ?? colors.member
+    return (
+        <span style={{
+            padding: '0.2rem 0.65rem', borderRadius: '999px',
+            fontSize: '0.72rem', fontWeight: 700, textTransform: 'capitalize',
+            background: c.bg, color: c.color, border: `1px solid ${c.border}`,
+        }}>
+            {role}
+        </span>
+    )
+}
+
+// ── Section card ──────────────────────────────────────────────
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+    return (
+        <div style={{
+            background: 'var(--surface)', border: '1px solid var(--border)',
+            borderRadius: '16px', overflow: 'hidden', marginBottom: '1.25rem',
+        }}>
+            <div style={{
+                padding: '1rem 1.5rem', borderBottom: '1px solid var(--border)',
+                fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)',
+                textTransform: 'uppercase', letterSpacing: '0.06em',
+            }}>
+                {title}
+            </div>
+            <div style={{ padding: '1.5rem' }}>
+                {children}
+            </div>
+        </div>
+    )
+}
+
+// ── Org avatar initials ───────────────────────────────────────
+function OrgAvatar({ name, size = 52 }: { name: string; size?: number }) {
+    const initials = name
+        .split(' ')
+        .map(w => w[0])
+        .slice(0, 2)
+        .join('')
+        .toUpperCase()
+    return (
+        <div style={{
+            width: size, height: size, borderRadius: '12px',
+            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800,
+            fontSize: size > 40 ? '1.1rem' : '0.85rem',
+            flexShrink: 0,
+            boxShadow: '0 4px 12px rgba(99,102,241,0.3)',
+        }}>
+            {initials}
+        </div>
+    )
+}
+
 export default function OrgSettingsClient({ user, orgs }: Props) {
+    const { t } = useTranslation()
     const { currentOrg, switchOrg } = useOrganization()
     const [inviteEmail, setInviteEmail] = useState('')
     const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member')
@@ -16,6 +81,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
     const [inviting, setInviting] = useState(false)
 
     const myOrg = orgs.find(o => o.id === currentOrg?.id) ?? orgs[0]
+    const isManager = myOrg?.role === 'owner' || myOrg?.role === 'admin'
 
     async function handleInvite(e: React.FormEvent) {
         e.preventDefault()
@@ -30,7 +96,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
         const data = await res.json()
 
         if (res.ok) {
-            setInviteMsg({ ok: `Invitación enviada a ${inviteEmail}` })
+            setInviteMsg({ ok: `✓ Invitación enviada a ${inviteEmail}` })
             setInviteEmail('')
         } else {
             setInviteMsg({ error: data.error ?? 'Error al invitar' })
@@ -38,88 +104,99 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
         setInviting(false)
     }
 
-    const card: React.CSSProperties = {
-        background: 'var(--surface)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        padding: '2rem',
-        marginBottom: '1.5rem',
-    }
-
     return (
         <div style={{ maxWidth: '640px' }}>
-            <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '2rem' }}>
-                Configuración de Empresa
-            </h1>
 
-            {/* Current org info */}
-            <div style={card}>
-                <h2 style={{ fontSize: '0.75rem', fontWeight: 600, marginBottom: '1.25rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Empresa Activa
-                </h2>
-                <div style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '0.25rem' }}>
-                    {myOrg?.name ?? '—'}
-                </div>
-                <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                    slug: {myOrg?.slug}
-                </div>
-                <span style={{
-                    display: 'inline-block',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '999px',
-                    background: 'var(--primary)',
-                    color: '#fff',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    textTransform: 'capitalize'
-                }}>
-                    Plan {myOrg?.plan}
-                </span>
+            {/* ── Page header ── */}
+            <div style={{ marginBottom: '2rem' }}>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
+                    🏢 Empresa
+                </h1>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.3rem' }}>
+                    Información y configuración de tu organización.
+                </p>
             </div>
 
-            {/* Org switcher (if user has multiple orgs) */}
-            {orgs.length > 1 && (
-                <div style={card}>
-                    <h2 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                        Cambiar Empresa
-                    </h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {orgs.map(org => (
-                            <button
-                                key={org.id}
-                                onClick={() => switchOrg(org)}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'space-between',
-                                    padding: '0.75rem 1rem',
-                                    borderRadius: '8px',
-                                    border: org.id === myOrg?.id ? '2px solid var(--primary)' : '1px solid var(--border)',
-                                    background: org.id === myOrg?.id ? 'rgba(var(--primary-rgb),0.05)' : 'transparent',
-                                    cursor: org.id === myOrg?.id ? 'default' : 'pointer',
-                                    color: 'var(--foreground)',
-                                    textAlign: 'left',
-                                    width: '100%',
-                                }}
-                            >
-                                <span style={{ fontWeight: 600 }}>{org.name}</span>
-                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' }}>
-                                    {org.role}
+            {/* ── Active org card ── */}
+            <Section title="Empresa Activa">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <OrgAvatar name={myOrg?.name ?? 'O'} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{myOrg?.name ?? '—'}</span>
+                            {myOrg?.role && <RoleBadge role={myOrg.role} />}
+                            {myOrg?.plan && (
+                                <span style={{
+                                    padding: '0.2rem 0.65rem', borderRadius: '999px',
+                                    fontSize: '0.72rem', fontWeight: 700, textTransform: 'capitalize',
+                                    background: 'rgba(99,102,241,0.1)', color: 'var(--primary)',
+                                    border: '1px solid rgba(99,102,241,0.25)',
+                                }}>
+                                    Plan {myOrg.plan}
                                 </span>
-                            </button>
-                        ))}
+                            )}
+                        </div>
+                        {myOrg?.slug && (
+                            <div style={{
+                                marginTop: '0.35rem', fontSize: '0.78rem',
+                                color: 'var(--text-muted)', fontFamily: 'monospace',
+                            }}>
+                                slug: {myOrg.slug}
+                            </div>
+                        )}
                     </div>
                 </div>
+            </Section>
+
+            {/* ── Org switcher ── */}
+            {orgs.length > 1 && (
+                <Section title="Cambiar Empresa">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {orgs.map(org => {
+                            const isActive = org.id === myOrg?.id
+                            return (
+                                <button
+                                    key={org.id}
+                                    onClick={() => !isActive && switchOrg(org)}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '0.875rem',
+                                        padding: '0.75rem 1rem', borderRadius: '10px', width: '100%',
+                                        border: isActive ? '2px solid var(--primary)' : '1px solid var(--border)',
+                                        background: isActive ? 'rgba(99,102,241,0.06)' : 'transparent',
+                                        cursor: isActive ? 'default' : 'pointer',
+                                        color: 'var(--foreground)', textAlign: 'left',
+                                        transition: 'background 0.15s, border-color 0.15s',
+                                    }}
+                                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--hover-item-bg)' }}
+                                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent' }}
+                                >
+                                    <OrgAvatar name={org.name} size={36} />
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontWeight: 700, fontSize: '0.9rem' }}>{org.name}</div>
+                                        {org.slug && (
+                                            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                                                {org.slug}
+                                            </div>
+                                        )}
+                                    </div>
+                                    <RoleBadge role={org.role} />
+                                    {isActive && (
+                                        <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700 }}>
+                                            ✓
+                                        </span>
+                                    )}
+                                </button>
+                            )
+                        })}
+                    </div>
+                </Section>
             )}
 
-            {/* Invite member */}
-            {(myOrg?.role === 'owner' || myOrg?.role === 'admin') && (
-                <div style={card}>
-                    <h2 style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1rem' }}>
-                        Invitar Miembro
-                    </h2>
+            {/* ── Invite member ── */}
+            {isManager && (
+                <Section title="Invitar Miembro">
                     <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', gap: '0.625rem' }}>
                             <input
                                 type="email"
                                 placeholder="email@empresa.com"
@@ -133,7 +210,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
                                 value={inviteRole}
                                 onChange={e => setInviteRole(e.target.value as any)}
                                 className="form-input"
-                                style={{ width: '130px' }}
+                                style={{ width: '120px' }}
                             >
                                 <option value="member">Miembro</option>
                                 <option value="admin">Admin</option>
@@ -141,26 +218,61 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
                         </div>
 
                         {inviteMsg?.error && (
-                            <div style={{ color: 'var(--error)', fontSize: '0.875rem' }}>{inviteMsg.error}</div>
+                            <div style={{
+                                padding: '0.625rem 1rem', borderRadius: '8px',
+                                background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)',
+                                color: 'var(--error)', fontSize: '0.875rem',
+                            }}>
+                                ⚠️ {inviteMsg.error}
+                            </div>
                         )}
                         {inviteMsg?.ok && (
-                            <div style={{ color: 'var(--success, #22c55e)', fontSize: '0.875rem' }}>{inviteMsg.ok}</div>
+                            <div style={{
+                                padding: '0.625rem 1rem', borderRadius: '8px',
+                                background: 'rgba(34,197,94,0.08)', border: '1px solid rgba(34,197,94,0.25)',
+                                color: '#22c55e', fontSize: '0.875rem',
+                            }}>
+                                {inviteMsg.ok}
+                            </div>
                         )}
 
-                        <button
-                            type="submit"
-                            disabled={inviting}
-                            className="btn btn-primary"
-                            style={{ alignSelf: 'flex-start' }}
-                        >
-                            {inviting ? 'Enviando...' : '+ Invitar'}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <button
+                                type="submit"
+                                disabled={inviting}
+                                className="btn btn-primary"
+                                style={{ padding: '0.6rem 1.5rem' }}
+                            >
+                                {inviting ? 'Enviando...' : '+ Invitar'}
+                            </button>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
+                                El usuario debe estar registrado en la plataforma.
+                            </p>
+                        </div>
                     </form>
-                    <p style={{ marginTop: '0.75rem', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                        El usuario debe estar registrado. Se le añadirá directamente a esta empresa.
-                    </p>
-                </div>
+                </Section>
             )}
+
+            {/* ── Account info ── */}
+            <Section title="Tu Cuenta">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <div style={{
+                        width: 44, height: 44, borderRadius: '50%',
+                        background: 'linear-gradient(135deg, #3b82f6, #06b6d4)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        color: '#fff', fontWeight: 800, fontSize: '1rem', flexShrink: 0,
+                    }}>
+                        {(user?.email?.[0] ?? '?').toUpperCase()}
+                    </div>
+                    <div>
+                        <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{user?.email}</div>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                            ID: <span style={{ fontFamily: 'monospace' }}>{user?.id?.slice(0, 8)}...</span>
+                        </div>
+                    </div>
+                </div>
+            </Section>
+
         </div>
     )
 }
