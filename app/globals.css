@@ -252,13 +252,39 @@ a {
 
 .input:focus {
   outline: none;
-  border-color: #8b5cf6;
-  background: rgba(15, 23, 42, 0.8);
+  border-color: var(--primary);
+  background: var(--surface);
   box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
 }
 
 .input::placeholder {
-  color: rgba(248, 250, 252, 0.3);
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+/* form-input — same as .input, used in newer components */
+.form-input {
+  width: 100%;
+  padding: 0.875rem 1.25rem;
+  background: var(--input-bg);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--foreground);
+  font-family: inherit;
+  transition: all 0.2s ease;
+  font-size: 0.95rem;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
 }
 
 /* Tables - Elegant & Glassy */
@@ -271,9 +297,9 @@ table {
 th {
   text-align: left;
   padding: 1rem 1.5rem;
-  color: rgba(248, 250, 252, 0.6);
-  font-weight: 500;
-  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.82rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 1px solid var(--border);
@@ -281,7 +307,7 @@ th {
 
 td {
   padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--border);
   transition: background 0.2s;
   font-size: 0.95rem;
 }
@@ -295,7 +321,7 @@ tbody tr {
 }
 
 tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--hover-item-bg);
 }
 
 /* Custom Scrollbar */

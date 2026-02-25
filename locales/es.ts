@@ -93,7 +93,20 @@ export const es = {
         createItems: "Crear Items",
         saveChanges: "Guardar Cambios",
         deleteItem: "Eliminar Item",
-        confirmDelete: "¿Estás seguro de que quieres eliminar este item? Esta acción no se puede deshacer."
+        confirmDelete: "¿Estás seguro de que quieres eliminar este item? Esta acción no se puede deshacer.",
+        // Search & filter UI
+        searchPlaceholder: "Buscar artículos, SKU...",
+        filterLabel: "Filtrar:",
+        allCategories: "Todas",
+        clearFilters: "Limpiar filtros",
+        noResults: "Sin resultados para esa búsqueda",
+        // Categories page
+        categoriesTitle: "Categorías",
+        newCategoryTitle: "Nueva Categoría",
+        existingCategories: "Categorías existentes",
+        addBtn: "Agregar",
+        noSubcategoriesHint: "Sin subcategorías — haz click en + Subcategoría para agregar.",
+        organizationHint: "Organiza tu inventario con categorías y subcategorías.",
     },
     sales: {
         title: "Historial de Ventas",
@@ -160,6 +173,12 @@ export const es = {
         vendorNamePlaceholder: "Nombre del Proveedor",
         contactPlaceholder: "Información de Contacto",
         saving: "Guardando...",
+        // Suppliers page
+        noSuppliersYet: "Sin proveedores aún",
+        noSuppliersHint: "Haz click en \"Agregar Proveedor\" para comenzar",
+        contactColumn: "Contacto",
+        legalNameLabel: "Razón Social",
+        supplierFormHint: "Llena los datos del nuevo proveedor",
 
         // Extended Fields
         rfc: "RFC",

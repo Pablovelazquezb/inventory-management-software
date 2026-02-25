@@ -5,18 +5,31 @@ export const ORG_COOKIE = 'current_org'
 
 /**
  * Returns the current organization ID for a server action or server component.
- * Reads from the `current_org` cookie set when the user logs in or switches org.
- * Throws if no org is active (user should have been redirected to /onboarding).
+ * First reads from the `current_org` cookie; if no cookie is set, falls back to
+ * querying the first organization the user belongs to (handles super admin case
+ * where the org-selection flow may have been skipped).
+ * Throws if the user truly has no organization.
  */
 export async function getCurrentOrgId(): Promise<string> {
     const cookieStore = await cookies()
     const orgId = cookieStore.get(ORG_COOKIE)?.value
+    if (orgId) return orgId
 
-    if (!orgId) {
-        throw new Error('NO_ORG: User has no active organization. Redirect to /onboarding.')
-    }
+    // Fallback: query the DB for the user's first organization
+    const { createClient } = await import('@/utils/supabase/server')
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('NO_ORG: Not authenticated')
 
-    return orgId
+    const { data: member } = await supabase
+        .from('organization_members')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle()
+
+    if (!member) throw new Error('No active organization')
+    return member.organization_id
 }
 
 /**

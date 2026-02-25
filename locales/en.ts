@@ -93,7 +93,20 @@ export const en = {
         createItems: "Create Items",
         saveChanges: "Save Changes",
         deleteItem: "Delete Item",
-        confirmDelete: "Are you sure you want to delete this item? This action cannot be undone."
+        confirmDelete: "Are you sure you want to delete this item? This action cannot be undone.",
+        // Search & filter UI
+        searchPlaceholder: "Search items, SKU...",
+        filterLabel: "Filter:",
+        allCategories: "All",
+        clearFilters: "Clear filters",
+        noResults: "No results for that search",
+        // Categories page
+        categoriesTitle: "Categories",
+        newCategoryTitle: "New Category",
+        existingCategories: "Existing categories",
+        addBtn: "Add",
+        noSubcategoriesHint: "No subcategories — click + Subcategory to add.",
+        organizationHint: "Organize your inventory with categories and subcategories.",
     },
     sales: {
         title: "Sales History",
@@ -159,6 +172,12 @@ export const en = {
         saveSupplier: "Save Supplier",
         saving: "Saving...",
         cancel: "Cancel",
+        // Suppliers page
+        noSuppliersYet: "No suppliers yet",
+        noSuppliersHint: "Click \"Add Supplier\" to get started",
+        contactColumn: "Contact",
+        legalNameLabel: "Legal Name",
+        supplierFormHint: "Fill in the new supplier details",
 
         // Extended Fields
         rfc: "RFC",
