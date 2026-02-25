@@ -107,6 +107,13 @@ export const es = {
         addBtn: "Agregar",
         noSubcategoriesHint: "Sin subcategorías — haz click en + Subcategoría para agregar.",
         organizationHint: "Organiza tu inventario con categorías y subcategorías.",
+        categoryPlaceholder: "ej. Ropa, Electrónicos...",
+        adding: "Agregando...",
+        loading: "Cargando...",
+        noCategoriesYet: "No hay categorías. Crea la primera arriba.",
+        subcategoryPlaceholder: "Nombre de subcategoría",
+        renameHint: "Click para renombrar",
+        save: "Guardar",
     },
     sales: {
         title: "Historial de Ventas",

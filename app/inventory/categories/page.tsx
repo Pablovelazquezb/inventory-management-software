@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from 'react'
 import { createCategory, deleteCategory, createSubcategory, deleteSubcategory, updateCategory, updateSubcategory } from '../actions'
 import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
+import { useTranslation } from '@/hooks/useTranslation'
 
 const initialState = { error: '' }
 
@@ -29,7 +30,6 @@ const rowStyle: React.CSSProperties = {
     background: 'transparent',
     transition: 'background 0.15s',
 }
-// Subcategory pill — clearly visible in both themes
 const subPill: React.CSSProperties = {
     display: 'inline-flex',
     alignItems: 'center',
@@ -66,6 +66,7 @@ const deleteBtn: React.CSSProperties = {
 // ─────────────────────────────────────────────────────────────
 
 export default function CategoriesPage() {
+    const { t } = useTranslation()
     const [createCatState, createCatAction, isCatPending] = useActionState(createCategory, initialState)
     const [createSubState, createSubAction, isSubPending] = useActionState(createSubcategory, initialState)
 
@@ -105,11 +106,11 @@ export default function CategoriesPage() {
             {/* ── Page header ── */}
             <div style={{ marginBottom: '2rem' }}>
                 <Link href="/inventory" style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.75rem', textDecoration: 'none' }}>
-                    ← Volver al Inventario
+                    {t.inventory.backToInventory}
                 </Link>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>Categorías</h1>
+                <h1 style={{ fontSize: '1.75rem', fontWeight: 800 }}>{t.inventory.categoriesTitle}</h1>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.25rem' }}>
-                    Organiza tu inventario con categorías y subcategorías.
+                    {t.inventory.organizationHint}
                 </p>
             </div>
 
@@ -118,18 +119,18 @@ export default function CategoriesPage() {
                 {/* ── Add Category ── */}
                 <div style={card}>
                     <div style={sectionHeader}>
-                        <span>Nueva Categoría</span>
+                        <span>{t.inventory.newCategoryTitle}</span>
                     </div>
                     <div style={{ padding: '1.25rem 1.5rem' }}>
                         <form action={createCatAction} style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-end' }}>
                             <div style={{ flex: 1 }}>
                                 <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                                    Nombre
+                                    {t.inventory.name}
                                 </label>
-                                <input className="form-input" name="name" placeholder="ej. Ropa, Electrónicos..." required />
+                                <input className="form-input" name="name" placeholder={t.inventory.categoryPlaceholder} required />
                             </div>
                             <button disabled={isCatPending} className="btn btn-primary" style={{ fontWeight: 600 }}>
-                                {isCatPending ? 'Agregando...' : '+ Agregar'}
+                                {isCatPending ? t.inventory.adding : `+ ${t.inventory.addBtn}`}
                             </button>
                         </form>
                         {createCatState?.error && (
@@ -141,17 +142,17 @@ export default function CategoriesPage() {
                 {/* ── Categories List ── */}
                 <div style={card}>
                     <div style={sectionHeader}>
-                        <span>Categorías existentes</span>
+                        <span>{t.inventory.existingCategories}</span>
                         <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                            {categories.length} {categories.length === 1 ? 'categoría' : 'categorías'}
+                            {categories.length} {categories.length === 1 ? t.inventory.category : t.inventory.categoriesTitle}
                         </span>
                     </div>
 
                     {loading ? (
-                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>Cargando...</div>
+                        <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>{t.inventory.loading}</div>
                     ) : categories.length === 0 ? (
                         <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                            No hay categorías. Crea la primera arriba.
+                            {t.inventory.noCategoriesYet}
                         </div>
                     ) : (
                         <div>
@@ -173,7 +174,7 @@ export default function CategoriesPage() {
                                                         style={{ maxWidth: 220 }}
                                                         autoFocus
                                                     />
-                                                    <button onClick={() => handleUpdateCategory(cat.id)} className="btn btn-primary" style={{ padding: '0.4rem 0.875rem', fontSize: '0.8rem' }}>Guardar</button>
+                                                    <button onClick={() => handleUpdateCategory(cat.id)} className="btn btn-primary" style={{ padding: '0.4rem 0.875rem', fontSize: '0.8rem' }}>{t.inventory.save}</button>
                                                     <button onClick={() => setEditingCatId(null)} style={{ ...deleteBtn, background: 'transparent', border: '1px solid var(--border)', color: 'var(--foreground)' }}>×</button>
                                                 </div>
                                             ) : (
@@ -182,7 +183,7 @@ export default function CategoriesPage() {
                                                     <button
                                                         onClick={() => { setEditingCatId(cat.id); setRenameValue(cat.name) }}
                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', opacity: 0.45, padding: '0 0.25rem' }}
-                                                        title="Renombrar"
+                                                        title={t.inventory.renameHint}
                                                     >✏️</button>
                                                 </div>
                                             )}
@@ -193,10 +194,10 @@ export default function CategoriesPage() {
                                                     onClick={() => setActiveCategoryId(activeCategoryId === cat.id ? null : cat.id)}
                                                     style={addSubBtn}
                                                 >
-                                                    {activeCategoryId === cat.id ? '✕ Cancelar' : '+ Subcategoría'}
+                                                    {activeCategoryId === cat.id ? `✕ ${t.purchases.cancel}` : `+ ${t.inventory.subcategory}`}
                                                 </button>
                                                 <form action={deleteCategory.bind(null, cat.id)}>
-                                                    <button style={deleteBtn} title="Eliminar categoría">🗑</button>
+                                                    <button style={deleteBtn} title={t.inventory.deleteItem}>🗑</button>
                                                 </form>
                                             </div>
                                         </div>
@@ -207,9 +208,9 @@ export default function CategoriesPage() {
                                                 <form action={async (fd) => { await createSubAction(fd); setActiveCategoryId(null) }}
                                                     style={{ display: 'flex', gap: '0.625rem' }}>
                                                     <input type="hidden" name="category_id" value={cat.id} />
-                                                    <input className="form-input" name="name" placeholder="Nombre de subcategoría" required style={{ flex: 1 }} autoFocus />
+                                                    <input className="form-input" name="name" placeholder={t.inventory.subcategoryPlaceholder} required style={{ flex: 1 }} autoFocus />
                                                     <button disabled={isSubPending} className="btn btn-primary" style={{ fontWeight: 600, fontSize: '0.875rem' }}>
-                                                        {isSubPending ? '...' : 'Agregar'}
+                                                        {isSubPending ? '...' : t.inventory.addBtn}
                                                     </button>
                                                 </form>
                                             </div>
@@ -236,7 +237,7 @@ export default function CategoriesPage() {
                                                             <>
                                                                 <span
                                                                     onClick={() => { setEditingSubId(sub.id); setRenameValue(sub.name) }}
-                                                                    title="Click para renombrar"
+                                                                    title={t.inventory.renameHint}
                                                                     style={{ cursor: 'pointer' }}
                                                                 >
                                                                     {sub.name}
@@ -244,7 +245,7 @@ export default function CategoriesPage() {
                                                                 <form action={deleteSubcategory.bind(null, sub.id)} style={{ display: 'inline' }}>
                                                                     <button
                                                                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.9rem', lineHeight: 1, padding: 0, display: 'flex' }}
-                                                                        title="Eliminar subcategoría"
+                                                                        title={t.inventory.deleteItem}
                                                                     >×</button>
                                                                 </form>
                                                             </>
@@ -256,7 +257,7 @@ export default function CategoriesPage() {
 
                                         {catSubs.length === 0 && activeCategoryId !== cat.id && (
                                             <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                                                Sin subcategorías — haz click en "+ Subcategoría" para agregar.
+                                                {t.inventory.noSubcategoriesHint}
                                             </p>
                                         )}
 

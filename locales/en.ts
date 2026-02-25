@@ -107,6 +107,13 @@ export const en = {
         addBtn: "Add",
         noSubcategoriesHint: "No subcategories — click + Subcategory to add.",
         organizationHint: "Organize your inventory with categories and subcategories.",
+        categoryPlaceholder: "e.g. Clothing, Electronics...",
+        adding: "Adding...",
+        loading: "Loading...",
+        noCategoriesYet: "No categories yet. Create the first one above.",
+        subcategoryPlaceholder: "Subcategory name",
+        renameHint: "Click to rename",
+        save: "Save",
     },
     sales: {
         title: "Sales History",
