@@ -135,7 +135,10 @@ export const en = {
         paymentInfo: "Payment Info",
         saveSale: "Save Sale",
 
-        // Productsem to Sale",
+        newSale: "+ New Sale",
+        recordSale: "Record Sale",
+        recordSaleSubtitle: "Add items to cart, adjust prices if needed, and confirm.",
+        backToInventory: "← Back to Inventory",
         addItem: "Add Item to Sale",
         searchPlaceholder: "Type name or SKU...",
         noMatches: "No matches found",
