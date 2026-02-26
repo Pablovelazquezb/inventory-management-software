@@ -876,3 +876,39 @@ export async function deleteCustomer(id: string) {
     if (error) throw new Error(error.message)
     revalidatePath('/inventory/customers')
 }
+
+export async function updateSale(id: string, prevState: any, formData: FormData) {
+    const supabase = await createClient()
+
+    const quantity = parseInt(formData.get('quantity') as string)
+    const totalPrice = parseFloat(formData.get('total_price') as string)
+    const note = formData.get('note') as string
+    const taxAmountStr = formData.get('tax_amount') as string
+    let taxAmount = 0
+    if (taxAmountStr) {
+        taxAmount = parseFloat(taxAmountStr)
+    }
+
+    try {
+        const { error } = await supabase
+            .from('sales')
+            .update({
+                quantity,
+                total_price: totalPrice,
+                tax_amount: taxAmount,
+                note,
+            })
+            .eq('id', id)
+
+        if (error) {
+            console.error('Error updating sale:', error)
+            return { error: error.message }
+        }
+
+        revalidatePath('/inventory/sales')
+        revalidatePath('/dashboard')
+    } catch (e) {
+        console.error('Action error:', e)
+        return { error: 'Unknown error occurred' }
+    }
+}

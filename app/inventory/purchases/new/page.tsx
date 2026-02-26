@@ -6,6 +6,7 @@ import { createPurchase } from '../../actions'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useTranslation } from '@/hooks/useTranslation'
+import SearchableSelect from '@/components/SearchableSelect'
 
 export default function NewPurchasePage() {
     const { t } = useTranslation()
@@ -344,16 +345,12 @@ export default function NewPurchasePage() {
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'end' }}>
                         <div style={{ flex: 2 }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>{t.purchases.product}</label>
-                            <select
-                                className="input"
+                            <SearchableSelect
+                                options={inventoryItems}
                                 value={selectedItem}
-                                onChange={(e) => setSelectedItem(e.target.value)}
-                            >
-                                <option value="">{t.purchases.selectProduct}</option>
-                                {inventoryItems.map(i => (
-                                    <option key={i.id} value={i.id}>{i.name}</option>
-                                ))}
-                            </select>
+                                onChange={(id) => setSelectedItem(id)}
+                                placeholder={t.purchases.selectProduct}
+                            />
                         </div>
                         <div style={{ flex: 1 }}>
                             <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', opacity: 0.8 }}>{t.purchases.quantity}</label>

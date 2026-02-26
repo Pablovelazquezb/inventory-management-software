@@ -1,6 +1,9 @@
 'use client'
 
 import { useTranslation } from '@/hooks/useTranslation'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import SaleDetailsModal from './SaleDetailsModal'
 
 interface SalesListProps {
     sales: any[]
@@ -8,6 +11,8 @@ interface SalesListProps {
 
 export default function SalesList({ sales }: SalesListProps) {
     const { t } = useTranslation()
+    const router = useRouter()
+    const [selectedSale, setSelectedSale] = useState<any>(null)
 
     return (
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -32,7 +37,12 @@ export default function SalesList({ sales }: SalesListProps) {
                             const total = subtotal + tax
 
                             return (
-                                <tr key={sale.id} className="hover-bg" style={{ borderBottom: '1px solid var(--border)' }}>
+                                <tr
+                                    key={sale.id}
+                                    className="hover-bg hover-slide"
+                                    style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                                    onClick={() => setSelectedSale(sale)}
+                                >
                                     <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                                         {new Date(sale.sold_at).toLocaleDateString()}
                                         <div style={{ fontSize: '0.75rem', opacity: 0.5 }}>
@@ -72,6 +82,16 @@ export default function SalesList({ sales }: SalesListProps) {
                     )}
                 </tbody>
             </table>
+
+            {selectedSale && (
+                <SaleDetailsModal
+                    sale={selectedSale}
+                    onClose={() => setSelectedSale(null)}
+                    onUpdate={() => {
+                        router.refresh()
+                    }}
+                />
+            )}
         </div >
     )
 }

@@ -39,7 +39,15 @@ export const en = {
         activity: "Activity",
         salesOrders: "Sales Orders",
         stockEntries: "Stock Entries",
-        realTime: "Data: Real-time"
+        realTime: "Data: Real-time",
+        revenueTrends: "Revenue Trends",
+        grossRevenueSubtitle: "Historical Gross Revenue",
+        grossRevenue: "Gross Revenue",
+        netSales: "Net Sales",
+        taxCollected: "Tax Collected",
+        viewAll: "View All",
+        topSellers: "Top 5 Best Sellers",
+        topCustomers: "Top Customers"
     },
     inventory: {
         title: "Inventory",
@@ -120,10 +128,14 @@ export const en = {
     sales: {
         title: "Sales History",
         subtitle: "Manage and view past sales.",
-        newSale: "+ New Sale",
-        recordSale: "Record Sale",
-        recordSaleSubtitle: "Add items to cart, adjust prices if needed, and confirm.",
-        backToInventory: "← Back to Inventory",
+        // Sales Details Modal
+        saleLabel: "SALE",
+        noCustomer: "No Customer Specified",
+        details: "Details",
+        paymentInfo: "Payment Info",
+        saveSale: "Save Sale",
+
+        // Productsem to Sale",
         addItem: "Add Item to Sale",
         searchPlaceholder: "Type name or SKU...",
         noMatches: "No matches found",
@@ -201,6 +213,7 @@ export const en = {
         addCustomer: "Add Customer",
         saveCustomer: "Save Customer",
         confirmDeleteCustomer: "Are you sure you want to delete this customer?",
+        editCustomer: "Edit Customer",
         noCustomers: "No customers found",
         loadingCustomers: "Loading customers...",
         customerNamePlaceholder: "Customer Name",

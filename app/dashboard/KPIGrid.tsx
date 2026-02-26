@@ -25,18 +25,18 @@ export default function KPIGrid({ totalRevenue, netRevenue, totalTax, totalItems
                     </svg>
                 </div>
                 <div style={{ fontSize: '0.875rem', opacity: 0.8, marginBottom: '0.5rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--success)' }}>
-                    Total Revenue (Gross)
+                    {t.dashboard.grossRevenue}
                 </div>
                 <div style={{ fontSize: '2.5rem', fontWeight: 700, background: 'var(--success-gradient)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                     ${totalRevenue.toLocaleString()}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '1rem', paddingTop: '0.5rem', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
                     <div>
-                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Net Sales</div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{t.dashboard.netSales}</div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>${netRevenue.toLocaleString()}</div>
                     </div>
                     <div>
-                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>Tax Collected</div>
+                        <div style={{ fontSize: '0.7rem', opacity: 0.6 }}>{t.dashboard.taxCollected}</div>
                         <div style={{ fontSize: '0.9rem', fontWeight: 600, color: '#f59e0b' }}>${totalTax.toLocaleString()}</div>
                     </div>
                 </div>

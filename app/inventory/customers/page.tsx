@@ -5,12 +5,14 @@ import { createClient } from '@/utils/supabase/client'
 import { createCustomer, deleteCustomer } from '../actions'
 import Link from 'next/link'
 import { useTranslation } from '@/hooks/useTranslation'
+import CustomerDetailsModal from './CustomerDetailsModal'
 
 export default function CustomersPage() {
     const { t } = useTranslation()
     const [customers, setCustomers] = useState<any[]>([])
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
+    const [selectedCustomer, setSelectedCustomer] = useState<any>(null)
     const [submitting, setSubmitting] = useState(false)
 
     useEffect(() => {
@@ -88,69 +90,93 @@ export default function CustomersPage() {
     )
 
     return (
-        <div className="container animate-slide-up" style={{ paddingBottom: '4rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <Link href="/inventory" className="btn" style={{ paddingLeft: 0, color: 'rgba(248,250,252,0.6)' }}>
-                        {t.purchases.backToInventory}
-                    </Link>
-                    <h2 style={{ fontSize: '2.5rem', fontWeight: 700, margin: 0, background: 'linear-gradient(to right, #f8fafc, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>{t.purchases.customersTitle}</h2>
+        <>
+            <div className="container animate-slide-up" style={{ paddingBottom: '4rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <div>
+                        <Link href="/inventory" className="btn hover-slide" style={{ paddingLeft: 0, color: 'rgba(248,250,252,0.6)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            ← {t.purchases.backToInventory}
+                        </Link>
+                    </div>
+                    <button onClick={() => setShowModal(true)} className="btn btn-primary shadow-glow">
+                        {t.purchases.addCustomer}
+                    </button>
                 </div>
-                <button onClick={() => setShowModal(true)} className="btn btn-primary">
-                    {t.purchases.addCustomer}
-                </button>
-            </div>
 
-            {loading ? (
-                <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>{t.purchases.loadingCustomers}</div>
-            ) : (
-                <div className="card" style={{ padding: 0 }}>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>{t.purchases.name}</th>
-                                <th>{t.purchases.contactInfo}</th>
-                                <th>{t.purchases.rfc}</th>
-                                <th style={{ textAlign: 'right' }}>{t.purchases.actions}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {customers.map((c, i) => (
-                                <tr key={c.id} style={{ animation: `fadeIn 0.3s ease-out ${i * 0.05}s forwards`, opacity: 0 }}>
-                                    <td style={{ fontWeight: 500, color: 'var(--foreground)' }}>
-                                        {c.name}
-                                        {c.legal_name && <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>{c.legal_name}</div>}
-                                    </td>
-                                    <td style={{ opacity: 0.8, fontSize: '0.9rem' }}>
-                                        {c.email && <div>✉️ {c.email}</div>}
-                                        {c.phone && <div>📞 {c.phone}</div>}
-                                        {c.address && <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.2rem' }}>📍 {c.address}</div>}
-                                    </td>
-                                    <td style={{ opacity: 0.8 }}>{c.rfc || '-'}</td>
-                                    <td style={{ textAlign: 'right' }}>
-                                        <button
-                                            onClick={() => handleDelete(c.id)}
-                                            className="btn"
-                                            style={{ color: 'var(--error)', padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: 'rgba(239,68,68,0.1)' }}
-                                        >
-                                            {t.purchases.delete}
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))}
-                            {customers.length === 0 && (
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '4rem', opacity: 0.5 }}>{t.purchases.loadingCustomers}</div>
+                ) : (
+                    <div className="card" style={{ padding: 0 }}>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
-                                        {t.purchases.noCustomers}
-                                    </td>
+                                    <th>{t.purchases.name}</th>
+                                    <th>{t.purchases.contactInfo}</th>
+                                    <th>{t.purchases.rfc}</th>
+                                    <th style={{ textAlign: 'right' }}>{t.purchases.actions}</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-
+                            </thead>
+                            <tbody>
+                                {customers.map((c, i) => (
+                                    <tr
+                                        key={c.id}
+                                        onClick={() => setSelectedCustomer(c)}
+                                        className="hover-bg hover-slide"
+                                        style={{
+                                            animation: `fadeIn 0.3s ease-out ${i * 0.05}s forwards`,
+                                            opacity: 0,
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        <td style={{ fontWeight: 500, color: 'var(--foreground)' }}>
+                                            {c.name}
+                                            {c.legal_name && <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>{c.legal_name}</div>}
+                                        </td>
+                                        <td style={{ opacity: 0.8, fontSize: '0.9rem' }}>
+                                            {c.email && <div>✉️ {c.email}</div>}
+                                            {c.phone && <div>📞 {c.phone}</div>}
+                                            {c.address && <div style={{ fontSize: '0.8rem', opacity: 0.7, marginTop: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '200px' }}>📍 {c.address}</div>}
+                                        </td>
+                                        <td style={{ opacity: 0.8 }}>{c.rfc || '-'}</td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation()
+                                                    handleDelete(c.id)
+                                                }}
+                                                className="btn"
+                                                style={{ color: 'var(--error)', padding: '0.4rem 0.8rem', fontSize: '0.85rem', background: 'rgba(239,68,68,0.1)' }}
+                                            >
+                                                {t.purchases.delete}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                {customers.length === 0 && (
+                                    <tr>
+                                        <td colSpan={4} style={{ padding: '3rem', textAlign: 'center', opacity: 0.5 }}>
+                                            {t.purchases.noCustomers}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
             {showModal && <Modal />}
-        </div>
+            {selectedCustomer && (
+                <CustomerDetailsModal
+                    customer={selectedCustomer}
+                    onClose={() => setSelectedCustomer(null)}
+                    onUpdate={() => {
+                        fetchCustomers();
+                        // Note: We don't close it so user can see updates, unless they want.
+                        // Leaving it open is nice for inline edits.
+                        // But let's just refresh data.
+                    }}
+                />
+            )}
+        </>
     )
 }

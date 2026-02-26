@@ -15,9 +15,6 @@ export default function DashboardHeader() {
                     {t.dashboard.subtitle}
                 </p>
             </div>
-            <div style={{ textAlign: 'right', color: 'var(--text-muted)', fontSize: '0.875rem', background: 'var(--hover-item-bg)', padding: '0.5rem 1rem', borderRadius: '20px' }}>
-                {t.dashboard.realTime}
-            </div>
         </div>
     )
 }

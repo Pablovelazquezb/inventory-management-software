@@ -1,9 +1,9 @@
 import { createClient } from '@/utils/supabase/server'
 import KPIGrid from './KPIGrid'
-import DashboardHeader from './DashboardHeader'
 import RevenueChart from './RevenueChart'
 import TopSellingList from './TopSellingList'
 import TopCustomersList from './TopCustomersList'
+import RecentSalesList from './RecentSalesList'
 
 export default async function DashboardPage() {
     const supabase = await createClient()
@@ -36,9 +36,7 @@ export default async function DashboardPage() {
     const totalStockEntries = entriesCount || 0
 
     return (
-        <div className="container animate-slide-up" style={{ paddingBottom: '4rem' }}>
-            <DashboardHeader />
-
+        <div className="container animate-slide-up" style={{ paddingBottom: '4rem', paddingTop: '2rem' }}>
             {/* KPI Cards */}
             <div className="animate-scale-in" style={{ animationDelay: '0.1s' }}>
                 <KPIGrid
@@ -52,9 +50,9 @@ export default async function DashboardPage() {
             </div>
 
             {/* Main Content Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', alignItems: 'stretch' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '1.5rem', alignItems: 'stretch' }}>
 
-                {/* Revenue Chart (Full Width on mobile, 2/3 on desktop if possible, but auto-fit is fine for now) */}
+                {/* Revenue Chart (Full Width) */}
                 <div style={{ gridColumn: '1 / -1' }}>
                     <RevenueChart sales={safeSales} />
                 </div>
@@ -64,6 +62,9 @@ export default async function DashboardPage() {
 
                 {/* Top Customers */}
                 <TopCustomersList sales={safeSales} />
+
+                {/* Recent Activity */}
+                <RecentSalesList sales={safeSales} />
 
             </div>
         </div>

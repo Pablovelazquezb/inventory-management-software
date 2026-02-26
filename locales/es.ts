@@ -39,7 +39,15 @@ export const es = {
         activity: "Actividad",
         salesOrders: "Órdenes de Venta",
         stockEntries: "Entradas de Stock",
-        realTime: "Datos: Tiempo Real"
+        realTime: "Datos: Tiempo Real",
+        revenueTrends: "Tendencias de Ganancias",
+        grossRevenueSubtitle: "Ingresos Brutos Históricos",
+        grossRevenue: "Ganancia Bruta",
+        netSales: "Ventas Netas",
+        taxCollected: "Impuestos Cobrados",
+        viewAll: "Ver Todos",
+        topSellers: "Top 5 Más Vendidos",
+        topCustomers: "Mejores Clientes"
     },
     inventory: {
         title: "Inventario",
@@ -120,6 +128,13 @@ export const es = {
     sales: {
         title: "Historial de Ventas",
         subtitle: "Gestiona y ve tus ventas pasadas.",
+        // Sales Details Modal
+        saleLabel: "VENTA",
+        noCustomer: "Sin Cliente Especificado",
+        details: "Detalles",
+        paymentInfo: "Info. de Pago",
+        saveSale: "Guardar Venta",
+
         newSale: "+ Nueva Venta",
         recordSale: "Registrar Venta",
         recordSaleSubtitle: "Agrega items al carrito, ajusta precios si es necesario y confirma.",
@@ -201,9 +216,10 @@ export const es = {
         customersTitle: "Clientes",
         addCustomer: "Agregar Cliente",
         saveCustomer: "Guardar Cliente",
-        confirmDeleteCustomer: "¿Estás seguro de eliminar este cliente?",
-        noCustomers: "No se encontraron clientes",
-        loadingCustomers: "Cargando clientes...",
+        loadingCustomers: "Buscando clientes...",
+        noCustomers: "No se encontraron clientes. ¡Crea el primero!",
+        confirmDeleteCustomer: "¿Estás seguro de que deseas eliminar a este cliente?",
+        editCustomer: "Editar Cliente",
         customerNamePlaceholder: "Nombre del Cliente",
         // New Purchase
         newOrderTitle: "Nueva Orden de Compra",
