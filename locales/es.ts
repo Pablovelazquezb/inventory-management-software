@@ -6,6 +6,8 @@ export const es = {
         inventory: "Inventario",
         settings: "Configuración",
         logout: "Cerrar Sesión",
+        organization: "Empresa",
+        adminPanel: "Panel de Admin",
     },
     sidebar: {
         newSale: "Nueva Venta",

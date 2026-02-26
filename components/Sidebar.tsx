@@ -57,7 +57,7 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
             subItems: [
                 { label: t.sidebar.suppliers, href: '/inventory/suppliers' },
                 { label: t.sidebar.newPurchase, href: '/inventory/purchases/new' },
-                { label: t.sidebar.purchaseHistory, href: '/inventory/purchases' },
+                { label: t.sidebar.purchaseHistory, href: '/inventory/purchases', exact: true as any },
             ]
         },
         {
@@ -77,12 +77,12 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
             icon: '⚙️'
         },
         {
-            label: 'Empresa',
+            label: t.common.organization || 'Empresa',
             href: '/settings/organization',
             icon: '🏢'
         },
         ...(isSuperAdmin ? [{
-            label: 'Admin Panel',
+            label: t.common.adminPanel || 'Admin Panel',
             href: '/admin',
             icon: '🔐'
         }] : [])
@@ -110,6 +110,7 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
                     <div style={{ position: 'relative' }}>
                         <button
                             onClick={() => setOrgDropdownOpen(prev => !prev)}
+                            className="hover-bg hover-slide"
                             style={{
                                 width: '100%',
                                 display: 'flex',
@@ -199,7 +200,7 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
                                             textAlign: 'left',
                                             fontSize: '1rem'
                                         }}
-                                        className="hover-bg"
+                                        className="hover-bg hover-slide"
                                     >
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                             <span>{item.icon}</span>
@@ -228,6 +229,7 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
                                                 <li key={sub.href}>
                                                     <Link
                                                         href={sub.href}
+                                                        className="hover-bg hover-slide"
                                                         style={{
                                                             display: 'block',
                                                             padding: '0.5rem 0.75rem',
@@ -249,6 +251,7 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
                             ) : (
                                 <Link
                                     href={item.href!}
+                                    className="hover-bg hover-slide"
                                     style={{
                                         display: 'flex',
                                         alignItems: 'center',

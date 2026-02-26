@@ -25,14 +25,11 @@ export default function AddItemPage() {
         // name: '', // Removed Group Name
         category: '',
         subcategory_id: '',
-        price: '',
-        unit_type: 'unit',
         description: ''
     })
 
     // Image Upload State
-    const [uploading, setUploading] = useState(false)
-    const [defaultImageUrl, setDefaultImageUrl] = useState('')
+    const [uploadingVariants, setUploadingVariants] = useState<{ [key: number]: boolean }>({})
 
     // Batch Mode State (Always Active)
     const [batchCount, setBatchCount] = useState(1)
@@ -63,9 +60,9 @@ export default function AddItemPage() {
         }
     }, [selectedCategory, categories, subcategories])
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
         try {
-            setUploading(true)
+            setUploadingVariants(prev => ({ ...prev, [index]: true }))
             const file = e.target.files?.[0]
             if (!file) return
 
@@ -86,12 +83,12 @@ export default function AddItemPage() {
                 .from('product-images')
                 .getPublicUrl(filePath)
 
-            setDefaultImageUrl(publicUrl)
+            updateVariant(index, 'image_url', publicUrl)
         } catch (error: any) {
             console.error('Error uploading image:', error)
             setError('Error uploading image: ' + error.message)
         } finally {
-            setUploading(false)
+            setUploadingVariants(prev => ({ ...prev, [index]: false }))
         }
     }
 
@@ -103,7 +100,7 @@ export default function AddItemPage() {
             price: '',
             weight: '',
             quantity: '1',
-            image_url: defaultImageUrl // Use uploaded image
+            image_url: ''
         }))
         setVariants(newVariants)
     }
@@ -119,7 +116,7 @@ export default function AddItemPage() {
     }
 
     const addVariant = () => {
-        setVariants([...variants, { id: '', name: '', price: '', weight: '', quantity: '1', image_url: defaultImageUrl }])
+        setVariants([...variants, { id: '', name: '', price: '', weight: '', quantity: '1', image_url: '' }])
     }
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -131,9 +128,10 @@ export default function AddItemPage() {
         // submitData.append('name', formData.name) // Removed Group Name
         submitData.append('category', formData.category)
         submitData.append('subcategory_id', formData.subcategory_id)
-        submitData.append('price', formData.price)
-        submitData.append('unit_type', formData.unit_type)
         submitData.append('description', formData.description)
+
+        // Use variants prices and units
+        submitData.append('unit_type', 'unit') // Can be overridden per variant in future if needed
 
         submitData.append('variants', JSON.stringify(variants))
         const result = await createBatchItems(null, submitData)
@@ -157,32 +155,7 @@ export default function AddItemPage() {
             <div className="card">
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
-                    {/* Image Upload Section */}
-                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'start' }}>
-                        <div style={{ width: '150px', height: '150px', borderRadius: '12px', border: '2px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'rgba(255,255,255,0.02)' }}>
-                            {uploading ? (
-                                <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>{t.inventory.uploading}</span>
-                            ) : defaultImageUrl ? (
-                                <img src={defaultImageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            ) : (
-                                <span style={{ fontSize: '2rem', opacity: 0.2 }}>📷</span>
-                            )}
-                            <input
-                                type="file"
-                                accept="image/*"
-                                onChange={handleImageUpload}
-                                style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                            />
-                        </div>
-                        <div style={{ flex: 1 }}>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.productImage}</label>
-                            <p style={{ fontSize: '0.85rem', opacity: 0.5, lineHeight: '1.4' }}>
-                                {t.inventory.imageHelp}
-                            </p>
-                        </div>
-                    </div>
-
-                    <hr style={{ borderColor: 'var(--border)', opacity: 0.3 }} />
+                    {/* Removed Global Image Upload */}
 
                     {/* Common Fields Row 1 */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
@@ -207,22 +180,7 @@ export default function AddItemPage() {
                         </div>
                     </div>
 
-                    {/* Common Fields Row 2 */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
-                        <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>
-                                {t.inventory.defaultPrice}
-                            </label>
-                            <input className="input" type="number" step="0.01" value={formData.price} onChange={e => setFormData({ ...formData, price: e.target.value })} placeholder="0.00" />
-                        </div>
-                        <div>
-                            <label className="text-md" style={{ display: 'block', marginBottom: '0.5rem', opacity: 0.8 }}>{t.inventory.unitType}</label>
-                            <select className="input" value={formData.unit_type} onChange={e => setFormData({ ...formData, unit_type: e.target.value })}>
-                                <option value="unit">{t.inventory.unitsPcs}</option>
-                                <option value="kg">{t.inventory.kgs}</option>
-                            </select>
-                        </div>
-                    </div>
+                    {/* Removed Common Fields Row 2 (Price & Unit Type) */}
 
                     {/* Variants Section (Always Visible) */}
                     <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid var(--border)' }}>
@@ -249,7 +207,8 @@ export default function AddItemPage() {
 
                         {variants.length > 0 && (
                             <div>
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', marginBottom: '0.5rem', opacity: 0.6, fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    <div>📷</div>
                                     <div>{t.inventory.idOpt}</div>
                                     <div>{t.inventory.name}</div>
                                     <div>{t.inventory.price} ($)</div>
@@ -259,7 +218,23 @@ export default function AddItemPage() {
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     {variants.map((v, i) => (
-                                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', alignItems: 'center' }}>
+                                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '40px 1fr 1.5fr 1fr 1fr 1fr 40px', gap: '1rem', alignItems: 'center' }}>
+                                            <div style={{ width: '40px', height: '40px', borderRadius: '8px', border: '1px dashed var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', position: 'relative', background: 'var(--surface)' }}>
+                                                {uploadingVariants[i] ? (
+                                                    <span style={{ fontSize: '0.6rem', opacity: 0.7 }}>...</span>
+                                                ) : v.image_url ? (
+                                                    <img src={v.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                                ) : (
+                                                    <span style={{ fontSize: '1rem', opacity: 0.3 }}>+</span>
+                                                )}
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    onChange={(e) => handleImageUpload(i, e)}
+                                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                                                    title={t.inventory.uploading}
+                                                />
+                                            </div>
                                             <input
                                                 className="input"
                                                 value={v.id || ''}
@@ -280,7 +255,8 @@ export default function AddItemPage() {
                                                 step="0.01"
                                                 value={v.price}
                                                 onChange={e => updateVariant(i, 'price', e.target.value)}
-                                                placeholder={formData.price || t.inventory.price}
+                                                placeholder={"0.00"}
+                                                required
                                             />
                                             <input
                                                 className="input"

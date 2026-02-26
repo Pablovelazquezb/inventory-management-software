@@ -64,8 +64,8 @@ export default function RevenueChart({ sales }: { sales: any[] }) {
                             dx={-10}
                         />
                         <Tooltip
-                            contentStyle={{ background: 'rgba(15, 23, 42, 0.9)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.3)' }}
-                            itemStyle={{ color: '#fff' }}
+                            contentStyle={{ background: 'var(--surface)', backdropFilter: 'blur(8px)', border: '1px solid var(--border)', borderRadius: '12px', boxShadow: 'var(--card-shadow-hover)', color: 'var(--foreground)' }}
+                            itemStyle={{ color: 'var(--foreground)' }}
                             formatter={(value: any, name: any) => [`$${Number(value || 0).toFixed(2)}`, name === 'net' ? 'Net Revenue' : 'Tax Collected']}
                         />
                         <Area

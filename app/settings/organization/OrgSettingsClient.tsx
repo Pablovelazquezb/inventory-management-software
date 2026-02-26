@@ -107,14 +107,15 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
     return (
         <div style={{ maxWidth: '640px' }}>
 
-            {/* ── Page header ── */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '1.75rem', fontWeight: 800, letterSpacing: '-0.02em' }}>
-                    🏢 Empresa
-                </h1>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.3rem' }}>
-                    Información y configuración de tu organización.
-                </p>
+            {/* ── Back link ── */}
+            <div style={{ marginBottom: '1.75rem' }}>
+                <a href="/dashboard" style={{
+                    display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
+                    fontSize: '0.875rem', color: 'var(--primary)', textDecoration: 'none',
+                    fontWeight: 600,
+                }}>
+                    ← Volver al Dashboard
+                </a>
             </div>
 
             {/* ── Active org card ── */}

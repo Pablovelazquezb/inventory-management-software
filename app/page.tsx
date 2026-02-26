@@ -25,16 +25,14 @@ export default function Home() {
         fontSize: '4rem',
         fontWeight: 800,
         marginBottom: '1rem',
-        background: 'linear-gradient(to right, #fff, #aaa)',
-        WebkitBackgroundClip: 'text',
-        WebkitTextFillColor: 'transparent'
+        color: 'var(--foreground)'
       }}>
-        Inventory<span style={{ color: 'var(--primary)', WebkitTextFillColor: 'initial' }}>.</span>
+        Inventory<span style={{ color: 'var(--primary)' }}>.</span>
       </h1>
 
       <p style={{
         fontSize: '1.25rem',
-        color: '#888',
+        color: 'var(--text-muted)',
         maxWidth: '600px',
         marginBottom: '3rem',
         lineHeight: 1.6
