@@ -175,13 +175,10 @@ export default function SuppliersPage() {
             )}
 
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-                <div>
-                    <Link href="/inventory" style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem', textDecoration: 'none' }}>
-                        {t.purchases.backToInventory}
-                    </Link>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0 }}>{t.purchases.suppliersTitle}</h1>
-                </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                <Link href="/inventory" style={{ fontSize: '0.85rem', color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: '0.375rem', marginBottom: '0.5rem', textDecoration: 'none' }}>
+                    {t.purchases.backToInventory}
+                </Link>
                 <button onClick={() => setShowModal(true)} className="btn btn-primary">
                     + {t.purchases.addSupplier}
                 </button>
