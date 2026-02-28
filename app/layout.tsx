@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 
 import { LanguageProvider } from '@/hooks/useTranslation'
 import { ThemeProvider } from '@/context/ThemeContext'
+import { PreferencesProvider } from '@/context/PreferencesContext'
 
 export const metadata: Metadata = {
   title: 'Inventory Management',
@@ -19,7 +20,9 @@ export default function RootLayout({
       <body>
         <LanguageProvider>
           <ThemeProvider>
-            {children}
+            <PreferencesProvider>
+              {children}
+            </PreferencesProvider>
           </ThemeProvider>
         </LanguageProvider>
       </body>

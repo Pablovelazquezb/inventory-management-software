@@ -28,6 +28,9 @@ export const es = {
         light: 'Modo Claro',
         dark: 'Modo Oscuro',
         save: "Guardar",
+        lowStockWarning: "Alerta de Stock Bajo",
+        enabled: "Activado",
+        disabled: "Desactivado",
     },
     dashboard: {
         title: "Dashboard",
@@ -71,6 +74,7 @@ export const es = {
         editItem: "Editar Item",
         confirmSplit: "¿Separar 1 unidad de este lote para editarla individualmente?",
         unit: "unidad",
+        units: "unidades",
         kg: "kg",
         backToInventory: "← Volver al Inventario",
         addHeader: "Agregar Nuevos Items",

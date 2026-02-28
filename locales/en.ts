@@ -28,6 +28,9 @@ export const en = {
         light: 'Light Mode',
         dark: 'Dark Mode',
         save: "Save",
+        lowStockWarning: "Low Stock Warning",
+        enabled: "Enabled",
+        disabled: "Disabled",
     },
     dashboard: {
         title: "Dashboard",
@@ -71,6 +74,7 @@ export const en = {
         editItem: "Edit Item",
         confirmSplit: "This will separate 1 unit from this batch so you can edit it individually. Continue?",
         unit: "unit",
+        units: "units",
         kg: "kg",
         backToInventory: "← Back to Inventory",
         addHeader: "Add New Items",

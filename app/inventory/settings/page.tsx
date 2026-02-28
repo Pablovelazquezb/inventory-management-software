@@ -2,11 +2,13 @@
 
 import { useTranslation } from '@/hooks/useTranslation'
 import { useTheme } from '@/context/ThemeContext'
+import { usePreferences } from '@/context/PreferencesContext'
 import { useState, useEffect } from 'react'
 
 export default function SettingsPage() {
     const { language, setLanguage, t } = useTranslation()
     const { theme, setTheme } = useTheme()
+    const { lowStockWarning, setLowStockWarning } = usePreferences()
     const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
@@ -81,6 +83,42 @@ export default function SettingsPage() {
                             }}
                         >
                             🌙 {t.settings.dark}
+                        </button>
+                    </div>
+                </div>
+
+                <div style={{ marginBottom: '1.5rem', borderTop: '1px solid var(--border)', paddingTop: '1.5rem' }}>
+                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 500 }}>
+                        {t.settings.lowStockWarning}
+                    </label>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button
+                            onClick={() => setLowStockWarning(true)}
+                            className={`btn`}
+                            style={{
+                                flex: 1,
+                                padding: '1rem',
+                                justifyContent: 'center',
+                                background: lowStockWarning ? 'var(--surface-highlight)' : 'transparent',
+                                border: lowStockWarning ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                color: lowStockWarning ? 'var(--foreground)' : 'var(--text-muted)'
+                            }}
+                        >
+                            🔔 {t.settings.enabled}
+                        </button>
+                        <button
+                            onClick={() => setLowStockWarning(false)}
+                            className={`btn`}
+                            style={{
+                                flex: 1,
+                                padding: '1rem',
+                                justifyContent: 'center',
+                                background: !lowStockWarning ? 'var(--surface-highlight)' : 'transparent',
+                                border: !lowStockWarning ? '1px solid var(--primary)' : '1px solid var(--border)',
+                                color: !lowStockWarning ? 'var(--foreground)' : 'var(--text-muted)'
+                            }}
+                        >
+                            🔕 {t.settings.disabled}
                         </button>
                     </div>
                 </div>

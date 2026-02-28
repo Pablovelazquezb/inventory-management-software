@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/utils/supabase/client'
 import ProductDetailsModal from './ProductDetailsModal'
 import { useTranslation } from '@/hooks/useTranslation'
+import { usePreferences } from '@/context/PreferencesContext'
 
 interface InventoryItem {
     id: string
@@ -31,8 +32,8 @@ const productCard: React.CSSProperties = {
     transition: 'transform 0.15s, box-shadow 0.15s, border-color 0.15s',
 }
 
-function StockBadge({ qty, unit }: { qty: number; unit: string }) {
-    const low = qty < 10
+function StockBadge({ qty, unit, lowStockWarning = true }: { qty: number; unit: string; lowStockWarning?: boolean }) {
+    const low = lowStockWarning && qty < 10
     return (
         <span style={{
             fontWeight: 700, fontSize: '0.78rem',
@@ -48,6 +49,7 @@ function StockBadge({ qty, unit }: { qty: number; unit: string }) {
 
 export default function InventoryList({ initialItems }: { initialItems: InventoryItem[] }) {
     const { t } = useTranslation()
+    const { lowStockWarning } = usePreferences()
     const [items] = useState<InventoryItem[]>(initialItems)
     const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null)
     const [search, setSearch] = useState('')
@@ -281,14 +283,14 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                             ) : (
                                                 <span style={{ fontSize: '3rem', opacity: 0.15 }}>📦</span>
                                             )}
-                                            {item.quantity < 10 && (
+                                            {lowStockWarning && item.quantity < 10 && (
                                                 <div style={{
                                                     position: 'absolute', top: 8, right: 8,
                                                     background: 'rgba(239,68,68,0.9)', color: '#fff',
                                                     fontSize: '0.63rem', fontWeight: 700,
                                                     padding: '0.18rem 0.45rem', borderRadius: '999px',
                                                 }}>
-                                                    Stock bajo
+                                                    {t.inventory.lowStock}
                                                 </div>
                                             )}
                                         </div>
@@ -311,7 +313,8 @@ export default function InventoryList({ initialItems }: { initialItems: Inventor
                                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', marginTop: 'auto', paddingTop: '0.25rem' }}>
                                                 <StockBadge
                                                     qty={item.quantity}
-                                                    unit={item.unit_type === 'kg' ? t.inventory.kg : t.inventory.unit}
+                                                    unit={item.unit_type === 'kg' ? t.inventory.kg : (item.quantity === 1 ? t.inventory.unit : (t.inventory as any).units || t.inventory.unit + 's')}
+                                                    lowStockWarning={lowStockWarning}
                                                 />
                                                 <div style={{ display: 'flex', gap: '0.3rem' }}>
                                                     <button
