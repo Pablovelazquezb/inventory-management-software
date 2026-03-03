@@ -11,7 +11,6 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
     const { t } = useTranslation()
     const { currentOrg, orgs, switchOrg } = useOrganization()
     const [mounted, setMounted] = useState(false)
-    const [orgDropdownOpen, setOrgDropdownOpen] = useState(false)
     const [expanded, setExpanded] = useState<Record<string, boolean>>({
         'Ventas': true,
         'Compras': true,
@@ -76,11 +75,6 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
             href: '/inventory/settings',
             icon: '⚙️'
         },
-        {
-            label: t.common.organization || 'Empresa',
-            href: '/settings/organization',
-            icon: '🏢'
-        },
         ...(isSuperAdmin ? [{
             label: t.common.adminPanel || 'Admin Panel',
             href: '/admin',
@@ -105,75 +99,33 @@ export default function Sidebar({ user, isSuperAdmin = false }: { user: any; isS
                     Inventory<span style={{ color: 'var(--primary)' }}>.</span>
                 </h1>
 
-                {/* Org Switcher */}
+                {/* Org Link */}
                 {currentOrg && (
-                    <div style={{ position: 'relative' }}>
-                        <button
-                            onClick={() => setOrgDropdownOpen(prev => !prev)}
-                            className="hover-bg hover-slide"
-                            style={{
-                                width: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'space-between',
-                                padding: '0.5rem 0.75rem',
-                                borderRadius: '8px',
-                                border: '1px solid var(--border)',
-                                background: 'var(--background)',
-                                color: 'var(--foreground)',
-                                cursor: 'pointer',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                            }}
-                        >
-                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
-                                <span>🏢</span>
-                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                    {currentOrg.name}
-                                </span>
+                    <Link
+                        href="/settings/organization"
+                        className="hover-bg hover-slide"
+                        style={{
+                            width: '100%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border)',
+                            background: 'var(--background)',
+                            color: 'var(--foreground)',
+                            textDecoration: 'none',
+                            fontSize: '0.85rem',
+                            fontWeight: 600,
+                        }}
+                    >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', overflow: 'hidden' }}>
+                            <span>🏢</span>
+                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {currentOrg.name}
                             </span>
-                            {orgs.length > 1 && <span style={{ opacity: 0.5, fontSize: '0.7rem' }}>▼</span>}
-                        </button>
-
-                        {orgDropdownOpen && orgs.length > 1 && (
-                            <div style={{
-                                position: 'absolute',
-                                top: 'calc(100% + 4px)',
-                                left: 0,
-                                right: 0,
-                                background: 'var(--surface)',
-                                border: '1px solid var(--border)',
-                                borderRadius: '8px',
-                                boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                                zIndex: 100,
-                                overflow: 'hidden',
-                            }}>
-                                {orgs.map(org => (
-                                    <button
-                                        key={org.id}
-                                        onClick={() => { switchOrg(org); setOrgDropdownOpen(false) }}
-                                        style={{
-                                            width: '100%',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            justifyContent: 'space-between',
-                                            padding: '0.625rem 0.875rem',
-                                            background: org.id === currentOrg.id ? 'rgba(var(--primary-rgb),0.08)' : 'transparent',
-                                            border: 'none',
-                                            borderBottom: '1px solid var(--border)',
-                                            cursor: 'pointer',
-                                            color: org.id === currentOrg.id ? 'var(--primary)' : 'var(--foreground)',
-                                            fontSize: '0.85rem',
-                                            textAlign: 'left',
-                                        }}
-                                    >
-                                        <span>{org.name}</span>
-                                        {org.id === currentOrg.id && <span style={{ fontSize: '0.7rem' }}>✓</span>}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                        </span>
+                    </Link>
                 )}
             </div>
 

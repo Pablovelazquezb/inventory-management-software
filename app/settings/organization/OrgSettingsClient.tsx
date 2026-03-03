@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useOrganization } from '@/context/OrganizationContext'
 import { useTranslation } from '@/hooks/useTranslation'
+import Link from 'next/link'
 
 interface Props {
     user: any
@@ -109,17 +110,30 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
 
             {/* ── Back link ── */}
             <div style={{ marginBottom: '1.75rem' }}>
-                <a href="/dashboard" style={{
-                    display: 'inline-flex', alignItems: 'center', gap: '0.375rem',
-                    fontSize: '0.875rem', color: 'var(--primary)', textDecoration: 'none',
-                    fontWeight: 600,
-                }}>
-                    ← Volver al Dashboard
-                </a>
+                <Link
+                    href="/dashboard"
+                    style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: 600,
+                        color: 'var(--text-muted)',
+                        textDecoration: 'none',
+                        transition: 'color 0.2s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'var(--foreground)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
+                >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="m15 18-6-6 6-6" />
+                    </svg>
+                    {t.settings.backToDashboard}
+                </Link>
             </div>
 
             {/* ── Active org card ── */}
-            <Section title="Empresa Activa">
+            <Section title={t.settings.activeOrg || "Empresa Activa"}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <OrgAvatar name={myOrg?.name ?? 'O'} />
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -133,7 +147,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
                                     background: 'rgba(99,102,241,0.1)', color: 'var(--primary)',
                                     border: '1px solid rgba(99,102,241,0.25)',
                                 }}>
-                                    Plan {myOrg.plan}
+                                    {t.settings.plan} {myOrg.plan}
                                 </span>
                             )}
                         </div>
@@ -142,7 +156,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
                                 marginTop: '0.35rem', fontSize: '0.78rem',
                                 color: 'var(--text-muted)', fontFamily: 'monospace',
                             }}>
-                                slug: {myOrg.slug}
+                                {t.settings.slugLabel} {myOrg.slug}
                             </div>
                         )}
                     </div>
@@ -151,7 +165,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
 
             {/* ── Org switcher ── */}
             {orgs.length > 1 && (
-                <Section title="Cambiar Empresa">
+                <Section title={t.settings.switchOrg || "Cambiar Empresa"}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {orgs.map(org => {
                             const isActive = org.id === myOrg?.id
@@ -195,7 +209,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
 
             {/* ── Invite member ── */}
             {isManager && (
-                <Section title="Invitar Miembro">
+                <Section title={t.settings.inviteMember || "Invitar Miembro"}>
                     <form onSubmit={handleInvite} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'flex', gap: '0.625rem' }}>
                             <input
@@ -213,8 +227,8 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
                                 className="form-input"
                                 style={{ width: '120px' }}
                             >
-                                <option value="member">Miembro</option>
-                                <option value="admin">Admin</option>
+                                <option value="member">{t.settings.roleMember || "Miembro"}</option>
+                                <option value="admin">{t.settings.roleAdmin || "Admin"}</option>
                             </select>
                         </div>
 
@@ -244,10 +258,10 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
                                 className="btn btn-primary"
                                 style={{ padding: '0.6rem 1.5rem' }}
                             >
-                                {inviting ? 'Enviando...' : '+ Invitar'}
+                                {inviting ? (t.settings.inviting || 'Enviando...') : (t.settings.inviteBtn || '+ Invitar')}
                             </button>
                             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>
-                                El usuario debe estar registrado en la plataforma.
+                                {t.settings.inviteNotice || "El usuario debe estar registrado en la plataforma."}
                             </p>
                         </div>
                     </form>
@@ -255,7 +269,7 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
             )}
 
             {/* ── Account info ── */}
-            <Section title="Tu Cuenta">
+            <Section title={t.settings.yourAccount || "Tu Cuenta"}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <div style={{
                         width: 44, height: 44, borderRadius: '50%',
