@@ -6,8 +6,10 @@ import { createClient as createServerClient } from '@supabase/supabase-js'
  * ⚠️ ONLY use this in server actions / API routes — NEVER in client code.
  */
 export function createAdminClient() {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    // Next.js static replacement sometimes forces process.env variables to undefined if
+    // not prefixed with NEXT_PUBLIC_. Use bracket notation to force Node.js process evaluation.
+    const supabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL']
+    const serviceRoleKey = process.env['SUPABASE_SERVICE_ROLE_KEY']
 
     if (!supabaseUrl || !serviceRoleKey) {
         throw new Error(

@@ -89,20 +89,32 @@ export default function OrgSettingsClient({ user, orgs }: Props) {
         setInviting(true)
         setInviteMsg(null)
 
-        const res = await fetch('/api/org/invite', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: inviteEmail, role: inviteRole, orgId: myOrg?.id }),
-        })
-        const data = await res.json()
+        try {
+            const res = await fetch('/api/org/invite', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: inviteEmail, role: inviteRole, orgId: myOrg?.id }),
+            })
 
-        if (res.ok) {
-            setInviteMsg({ ok: `✓ Invitación enviada a ${inviteEmail}` })
-            setInviteEmail('')
-        } else {
-            setInviteMsg({ error: data.error ?? 'Error al invitar' })
+            let data;
+            try {
+                data = await res.json()
+            } catch (err) {
+                // If it fails to parse JSON (e.g. 500 HTML error), fallback to text
+                throw new Error(await res.text() || 'Error de conexión con el servidor')
+            }
+
+            if (res.ok) {
+                setInviteMsg({ ok: `✓ Invitación enviada a ${inviteEmail}` })
+                setInviteEmail('')
+            } else {
+                setInviteMsg({ error: data?.error ?? 'Error al invitar' })
+            }
+        } catch (err: any) {
+            setInviteMsg({ error: err.message ?? 'Error inexperado. Por favor intenta de nuevo.' })
+        } finally {
+            setInviting(false)
         }
-        setInviting(false)
     }
 
     return (
